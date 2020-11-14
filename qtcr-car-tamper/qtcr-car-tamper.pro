@@ -22,6 +22,7 @@ SOURCES += \
     ../../cpp/src/opencv/backgroundsubtraction.cpp \
     ../../cpp/src/opencv/vibe-background-sequential.cpp \
     ../src/buf-main.cpp \
+    ../src/clock-main.cpp \
     ../src/main.cpp \
     ../src/motionbuffer.cpp
 

@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     cv::Mat frameForDetection(240, 320, CV_8UC3, blue);
     int cntFrame = 0;
 
-    MotionBuffer buf(30, 10);
+    MotionBuffer buf(50, 10);
     bool isMainAlive = true;
     std::thread thread_motion_detection( fn_motion_detection,
                                          std::ref(buf),
@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
         if (cv::waitKey(10) == 27) {
             cout << "esc -> end video processing" << endl;
             isMainAlive = false;
+            buf.stopDetection();
             break;
         }
     }
