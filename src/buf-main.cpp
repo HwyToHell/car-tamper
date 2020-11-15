@@ -1,3 +1,4 @@
+#include "../inc/backgroundsubtraction.h"
 #include "../inc/motionbuffer.h"
 
 // opencv
@@ -11,11 +12,46 @@
 
 
 void fn_motion_detection(MotionBuffer& buf, cv::Mat& frameForDetection, bool& isMainThreadRunning) {
+    const int minMotionIntensity = 100;
+    const int mimotionDuration = 2; // number of frames
+    int motionDuration = 0;
     std::cout << "thread motion detection started" << std::endl;
+
+    BackgroundSubtractorLowPass bgrLowPass(0.005, 40);
+    cv::Mat mask;
+    int cntLoop = 0;
 
     while (isMainThreadRunning) {
         frameForDetection = buf.getFrameForDetection();
-        std::cout << "frame received" << std::endl;
+
+        // background subtraction
+        bgrLowPass.apply(frameForDetection, mask);
+        int motionIntensity = cv::countNonZero(frameForDetection);
+
+        // motion detected
+        if (motionIntensity > minMotionIntensity) {
+            // for longer period of time
+            if (motionDuration >= mimotionDuration) {
+                buf.setMotionDetected(true);
+            } else {
+                ++motionDuration;
+            }
+        // no motion detected
+        } else {
+            if (motionDuration <= 0) {
+                buf.setMotionDetected(false);
+            } else {
+                --motionDuration;
+            }
+        }
+
+
+        if ( (++cntLoop % 10) == 0 ) {
+             std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        }
+
+        // reset isFrameForDetection ready
+        buf.setDetectionDone();
     }
 }
 
@@ -33,12 +69,13 @@ int main(int argc, char *argv[])
     cv::Mat frameForDetection(240, 320, CV_8UC3, blue);
     int cntFrame = 0;
 
-    MotionBuffer buf(50, 10);
+    MotionBuffer buf(50, 5);
     bool isMainAlive = true;
     std::thread thread_motion_detection( fn_motion_detection,
                                          std::ref(buf),
                                          std::ref(frameForDetection),
                                          std::ref(isMainAlive) );
+    buf.detectionLogger.overflow = false;
 
     while (true) {
         ++cntFrame;
@@ -48,7 +85,7 @@ int main(int argc, char *argv[])
         cv::imshow("video", frame);
         buf.writeFrameToBuffer(frame);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
         cv::imshow("detection", frameForDetection);
 
         if (cv::waitKey(10) == 27) {

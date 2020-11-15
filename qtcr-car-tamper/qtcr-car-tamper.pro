@@ -14,15 +14,12 @@ LIBS += -lopencv_core \
 LIBS += -lv4l2 -lv4l1
 
 HEADERS += \
-    ../../cpp/inc/opencv/backgroundsubtraction.h \
-    ../../cpp/inc/opencv/vibe-background-sequential.h \
+    ../inc/backgroundsubtraction.h \
     ../inc/motionbuffer.h
 
 SOURCES += \
-    ../../cpp/src/opencv/backgroundsubtraction.cpp \
-    ../../cpp/src/opencv/vibe-background-sequential.cpp \
+    ../src/backgroundsubtraction.cpp \
     ../src/buf-main.cpp \
-    ../src/clock-main.cpp \
     ../src/main.cpp \
     ../src/motionbuffer.cpp
 

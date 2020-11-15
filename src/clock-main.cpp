@@ -23,7 +23,7 @@ std::string getTimeStamp() {
     return timeStamp.str();
 }
 
-int clock-main(int argc, char *argv[])
+int clock_main(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;
@@ -41,4 +41,5 @@ int clock-main(int argc, char *argv[])
          << endl;
 
     cout << "getTimeStamp: " << getTimeStamp() << endl;
+    return 0;
 }
