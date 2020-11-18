@@ -41,4 +41,6 @@ private:
     std::size_t m_preBufferSize;
 };
 
+std::string getTimeStamp();
+
 #endif // MOTIONBUFFER_H

@@ -45,7 +45,7 @@ cv::Mat MotionBuffer::getFrameForDetection() {
 
 cv::Mat MotionBuffer::getMotionFrame() {
     // runs on thread_save_video
-    if ()
+
     return cv::Mat();
 }
 

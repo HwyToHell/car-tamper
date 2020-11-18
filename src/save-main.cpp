@@ -56,8 +56,12 @@ void fn_motion_detection(MotionBuffer& buf, cv::Mat& frameForDetection, bool& is
 }
 
 
-int buf_main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
+
+
+
+
     (void)argc; (void)argv;
     using namespace std;
     const cv::Scalar red			= cv::Scalar(0,0,255);

@@ -14,12 +14,15 @@ LIBS += -lopencv_core \
 LIBS += -lv4l2 -lv4l1
 
 HEADERS += \
+    ../car-tamper-test/inc/video-capture-simu.h \
     ../inc/backgroundsubtraction.h \
     ../inc/motionbuffer.h
 
 SOURCES += \
+    ../car-tamper-test/src/video-capture-simu.cpp \
     ../src/backgroundsubtraction.cpp \
     ../src/buf-main.cpp \
+    ../src/cap-main.cpp \
     ../src/main.cpp \
     ../src/motionbuffer.cpp
 
