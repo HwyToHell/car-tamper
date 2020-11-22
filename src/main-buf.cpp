@@ -56,7 +56,7 @@ void fn_motion_detection(MotionBuffer& buf, cv::Mat& frameForDetection, bool& is
 }
 
 
-int buf_main(int argc, char *argv[])
+int main_buf(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;
@@ -83,7 +83,7 @@ int buf_main(int argc, char *argv[])
         blackFrame.copyTo(frame);
         cv::putText(frame, to_string(cntFrame), cv::Point(10,50), cv::FONT_HERSHEY_SIMPLEX, 2, red, 3);
         cv::imshow("video", frame);
-        buf.writeFrameToBuffer(frame);
+        buf.pushFrameToBuffer(frame);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(30));
         cv::imshow("detection", frameForDetection);

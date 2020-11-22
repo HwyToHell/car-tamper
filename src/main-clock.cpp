@@ -23,7 +23,8 @@ std::string getTimeStamp() {
     return timeStamp.str();
 }
 
-int clock_main(int argc, char *argv[])
+// test std::chrono time functions
+int main_clock(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;

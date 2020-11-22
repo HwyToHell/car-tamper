@@ -9,6 +9,8 @@
 // project specific
 #include "../../cpp/inc/opencv/backgroundsubtraction.h"
 
+
+// test read opencv video capture
 int main_read(int argc, char *argv[])
 {
     using namespace std;

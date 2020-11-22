@@ -7,6 +7,15 @@
 #include <deque>
 #include <mutex>
 #include <string>
+#include <thread>
+
+#define DEBUG_BUILD
+
+#ifdef DEBUG_BUILD
+    #define DEBUG(x) do { std::cerr << x << std::endl; } while (0)
+#else
+    #define DEBUG(x) do {} while (0)
+#endif
 
 
 struct Logger {
@@ -16,31 +25,40 @@ struct Logger {
     std::chrono::milliseconds taskTimeElapsed;
 };
 
+
 class MotionBuffer
 {
 public:
-    MotionBuffer(std::size_t preBufferSize = 30, int detectionSampleRatio = 3);
-    cv::Mat getFrameForDetection();
-    cv::Mat getMotionFrame();
-    void    setMotionDetected(bool isMotionDetected);
-    void    setDetectionDone();
-    void    stopDetection();
-    void    writeFrameToBuffer(cv::Mat& frame);
+    MotionBuffer(std::size_t preBufferSize = 30);
+    ~MotionBuffer();
+    void    pushFrameToBuffer(cv::Mat& frame);
+    void    stopBuffer();
+    void    toggleSaveToDisk(bool value);
     Logger  detectionLogger;
 private:
-    bool isFrameForDetectionReady();
-    std::deque<cv::Mat> m_buffer;
-    std::condition_variable m_cndFrameForDetectionReady;
-    int m_detectionSampleRatio;
-    int m_frameCount;
-    bool m_isDetectionRunning;
-    bool m_isFrameForDetectionReady;
-    bool m_isMotionDetected;
-    std::mutex m_mtxDetection;
-    std::mutex m_mtxSaveVideo;
-    std::size_t m_preBufferSize;
+    void                    saveMotionToDisk();
+    bool                    m_activateSaveToDisk;
+    std::deque<cv::Mat>     m_buffer;
+    std::condition_variable m_cndBufferAccess;
+    int                     m_frameCount;
+    cv::Size                m_frameSize;
+    double                  m_fps;
+    bool                    m_isBufferAccessible;
+    bool                    m_isSaveToDiskRunning;
+    std::mutex              m_mtxBufferAccess;
+    const std::size_t       m_preBufferSize;
+    bool                    m_terminate;
+    std::thread             m_thread;
 };
 
-std::string getTimeStamp();
+
+enum class TimeResolution {ms, sec};
+
+
+std::string getTimeStamp(TimeResolution resolution);
+
+inline std::string getTimeStampMs() {
+    return getTimeStamp(TimeResolution::ms);
+};
 
 #endif // MOTIONBUFFER_H

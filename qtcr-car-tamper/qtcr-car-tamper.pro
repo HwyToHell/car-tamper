@@ -21,9 +21,7 @@ HEADERS += \
 SOURCES += \
     ../car-tamper-test/src/video-capture-simu.cpp \
     ../src/backgroundsubtraction.cpp \
-    ../src/buf-main.cpp \
-    ../src/cap-main.cpp \
-    ../src/main.cpp \
+    ../src/main-write.cpp \
     ../src/motionbuffer.cpp
 
 # Default rules for deployment.
