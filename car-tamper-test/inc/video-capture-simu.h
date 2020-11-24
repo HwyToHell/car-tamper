@@ -17,6 +17,7 @@ class VideoCaptureSimu
 public:
     VideoCaptureSimu(size_t framesPerSecond = 10);
     ~VideoCaptureSimu();
+    double get(int propid);
     std::string get(VidCapProps param);
     int     getFrameCount();
     bool    read(cv::Mat& frame);

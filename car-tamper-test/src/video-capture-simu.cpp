@@ -100,6 +100,20 @@ std::string VideoCaptureSimu::get(VidCapProps param) {
     return ret;
 }
 
+double VideoCaptureSimu::get(int propid) {
+    switch (propid) {
+    case cv::CAP_PROP_FPS:
+        return m_fps;
+    case cv::CAP_PROP_FRAME_HEIGHT:
+        return m_frameSize.height;
+    case cv::CAP_PROP_FRAME_WIDTH:
+        return m_frameSize.width;
+    default:
+        return 0;
+    }
+}
+
+
 
 int VideoCaptureSimu::getFrameCount() {
     return m_cntFrame;

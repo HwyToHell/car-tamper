@@ -33,16 +33,16 @@ public:
     ~MotionBuffer();
     void    pushFrameToBuffer(cv::Mat& frame);
     void    stopBuffer();
-    void    toggleSaveToDisk(bool value);
+    void    activateSaveToDisk(bool value);
     Logger  detectionLogger;
 private:
     void                    saveMotionToDisk();
     bool                    m_activateSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
+    double                  m_fps;
     int                     m_frameCount;
     cv::Size                m_frameSize;
-    double                  m_fps;
     bool                    m_isBufferAccessible;
     bool                    m_isSaveToDiskRunning;
     std::mutex              m_mtxBufferAccess;

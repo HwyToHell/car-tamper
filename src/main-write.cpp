@@ -27,7 +27,6 @@ int main(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;
-    const cv::Scalar red			= cv::Scalar(0,0,255);
 
     //cout << cv::getBuildInformation() << endl;
     /* test vid cap get and set
@@ -43,23 +42,41 @@ int main(int argc, char *argv[])
     cout << "height:  " << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << endl;
     */
 
-    VideoCaptureSimu cap(10);
+    size_t fps = 10;
+
+    VideoCaptureSimu cap(fps);
     MotionBuffer buf(20);
     cv::Mat frame;
     int cnt = 0;
+    /*
+    cv::VideoWriter videoWriter;
+    std::string filename = getTimeStamp(TimeResolution::sec) + ".avi";
+    int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
+
+    int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
+    int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+    cout << width << "x" << height << endl;
+
+    if(!videoWriter.open(filename, fourcc, fps, cv::Size(width,height) )) {
+        std::cout << "cannot open file: " << filename << std::endl;
+    }
+    */
 
     while (cap.read(frame)) {
         ++cnt;
         cv::imshow("video", frame);
+        // videoWriter.write(frame);
 
+        // test buffer functions
+        cout << endl << "frame: " << cnt << endl;
         buf.pushFrameToBuffer(frame);
 
-        if (cnt > 30) {
-            buf.toggleSaveToDisk(true);
+        if (cnt > 10) {
+            buf.activateSaveToDisk(true);
         }
 
-        if (cnt > 100) {
-            buf.toggleSaveToDisk(true);
+        if (cnt > 20) {
+            buf.activateSaveToDisk(false);
         }
 
         if (cv::waitKey(10) == 27) {
@@ -67,6 +84,7 @@ int main(int argc, char *argv[])
             break;
         }
     }
+    // videoWriter.release();
     cap.release();
     return 0;
 

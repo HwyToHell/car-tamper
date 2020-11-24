@@ -3,6 +3,7 @@
 
 MotionBuffer::MotionBuffer(std::size_t preBufferSize) :
     m_activateSaveToDisk{false},
+    m_fps{10},
     m_frameSize{cv::Size(640,480)},
     m_isBufferAccessible{false},
     m_isSaveToDiskRunning{false},
@@ -24,12 +25,15 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
     {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
         saveToDiskRunning = m_isSaveToDiskRunning;
     }
+    DEBUG(getTimeStampMs() << " frame pushed to buffer"
+          << ", saveToDiskRunning: " << saveToDiskRunning);
 
     if (saveToDiskRunning) {
         // lock guard needed because of deque size change
-        {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-            m_buffer.push_front(frame);
-            m_isBufferAccessible = true;
+        {
+        std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+        m_buffer.push_front(frame);
+        m_isBufferAccessible = true;
         }
         m_cndBufferAccess.notify_one();
 
@@ -42,9 +46,12 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
         if (m_buffer.size() > m_preBufferSize) {
             m_buffer.pop_back();
         }
+        DEBUG("buffer size: " << m_buffer.size());
 
         // notify thread that -> will set saveToDiskRunning
         if (m_activateSaveToDisk) {
+            std::cout << "save to disk activated" << std::endl;
+            m_isBufferAccessible = true;
             m_cndBufferAccess.notify_one();
         }
     }
@@ -55,13 +62,15 @@ void MotionBuffer::saveMotionToDisk() {
     // run thread func until terminate signal is received
     cv::VideoWriter videoWriter;
     cv::Mat lastFrame;
+    DEBUG(getTimeStampMs() << " wait for newFrameToBuffer started");
 
     while (!m_terminate) {
+
         // wait for new frame pushed to buffer
         {   std::unique_lock<std::mutex> bufferLock(m_mtxBufferAccess);
             m_cndBufferAccess.wait(bufferLock, [this]{return m_isBufferAccessible;});
         }
-        DEBUG(getTimeStampMs() << "wait for newFrameToBuffer finished");
+        DEBUG(getTimeStampMs() << " wait for newFrameToBuffer finished");
         if (m_terminate) break;
 
         // open new video file for writing
@@ -75,6 +84,7 @@ void MotionBuffer::saveMotionToDisk() {
 
             if(!videoWriter.open(filename, fourcc, m_fps, m_frameSize)) {
                 std::cout << "cannot open file: " << filename << std::endl;
+                m_isSaveToDiskRunning = false;
                 m_terminate = true;
                 break;
             }
@@ -86,25 +96,28 @@ void MotionBuffer::saveMotionToDisk() {
         // continue writing frames until buffer emptied
         bool manyFramesAvailabe = true;
         while (manyFramesAvailabe) {
-            {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-                m_buffer.back().copyTo(lastFrame);
-                m_buffer.pop_back();
-                manyFramesAvailabe = m_buffer.size() > 1;
+            {
+            std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+            m_buffer.back().copyTo(lastFrame);
+            m_buffer.pop_back();
+            manyFramesAvailabe = m_buffer.size() > 1;
             }
-            DEBUG(getTimeStampMs() << "last frame copied");
+            DEBUG(getTimeStampMs() << " last frame copied");
 
             videoWriter.write(lastFrame);
-            DEBUG(getTimeStampMs() << "last frame written");
+            DEBUG(getTimeStampMs() << " last frame written");
 
         } // while write frames until buffer emptied
 
         bool stopWriting = false;
         {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+            m_isBufferAccessible = false;
             stopWriting = !m_activateSaveToDisk;
         }
         if (stopWriting) {
             m_isSaveToDiskRunning = false;
             videoWriter.release();
+            DEBUG(getTimeStampMs() << " videoWriter released");
         }
 
 
@@ -121,7 +134,7 @@ void MotionBuffer::stopBuffer() {
 }
 
 
-void MotionBuffer::toggleSaveToDisk(bool value) {
+void MotionBuffer::activateSaveToDisk(bool value) {
     m_activateSaveToDisk = value;
 }
 
