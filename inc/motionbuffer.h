@@ -31,9 +31,11 @@ class MotionBuffer
 public:
     MotionBuffer(std::size_t preBufferSize = 30);
     ~MotionBuffer();
-    void    pushFrameToBuffer(cv::Mat& frame);
-    void    stopBuffer();
     void    activateSaveToDisk(bool value);
+    bool    popBuffer(cv::Mat& out);
+    void    printBuffer();
+    void    pushFrameToBuffer(cv::Mat& frame);
+    void    releaseBuffer();
     Logger  detectionLogger;
 private:
     void                    saveMotionToDisk();

@@ -15,8 +15,15 @@ MotionBuffer::MotionBuffer(std::size_t preBufferSize) :
 
 
 MotionBuffer::~MotionBuffer() {
-    stopBuffer();
-    assert(!m_thread.joinable());
+    if (m_thread.joinable()) {
+        releaseBuffer();
+        m_thread.join();
+        assert(!m_thread.joinable());
+    }
+}
+
+void MotionBuffer::activateSaveToDisk(bool value) {
+    m_activateSaveToDisk = value;
 }
 
 
@@ -41,6 +48,8 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
     } else {
         // no lock guard needed
         m_buffer.push_front(frame);
+        std::string imgFile = getTimeStampMs() + ".jpg";
+        cv::imwrite(imgFile, frame);
 
         // delete last frame if ring buffer size exeeded
         if (m_buffer.size() > m_preBufferSize) {
@@ -55,6 +64,37 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
             m_cndBufferAccess.notify_one();
         }
     }
+}
+
+
+bool MotionBuffer::popBuffer(cv::Mat& out) {
+    if (m_buffer.size() > 0) {
+        out = m_buffer.back().clone();
+        m_buffer.pop_back();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+void MotionBuffer::printBuffer() {
+    std::deque<cv::Mat>::iterator it = m_buffer.begin();
+    int cnt = 0;
+    while ( it != m_buffer.end() ) {
+        std::string imgFile = getTimeStampMs() + ".jpg";
+        cv::imwrite(imgFile, *it);
+        ++it;
+        std::cout << "frame from buffer #" << ++cnt << std::endl;
+    }
+}
+
+
+void MotionBuffer::releaseBuffer() {
+    m_terminate = true;
+    std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+    m_isBufferAccessible = true;
+    m_cndBufferAccess.notify_one();
 }
 
 
@@ -88,7 +128,7 @@ void MotionBuffer::saveMotionToDisk() {
                 m_terminate = true;
                 break;
             }
-            DEBUG(getTimeStampMs() << "video file created");
+            DEBUG(getTimeStampMs() << " video file created");
             std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
             m_isSaveToDiskRunning = true;
         }
@@ -103,6 +143,8 @@ void MotionBuffer::saveMotionToDisk() {
             manyFramesAvailabe = m_buffer.size() > 1;
             }
             DEBUG(getTimeStampMs() << " last frame copied");
+            //std::string imgFile = getTimeStampMs() + ".jpg";
+            //cv::imwrite(imgFile, lastFrame);
 
             videoWriter.write(lastFrame);
             DEBUG(getTimeStampMs() << " last frame written");
@@ -122,20 +164,6 @@ void MotionBuffer::saveMotionToDisk() {
 
 
     } // while thread not terminated
-}
-
-
-void MotionBuffer::stopBuffer() {
-    std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-    m_activateSaveToDisk = false;
-    m_isBufferAccessible = true;
-    m_cndBufferAccess.notify_one();
-
-}
-
-
-void MotionBuffer::activateSaveToDisk(bool value) {
-    m_activateSaveToDisk = value;
 }
 
 

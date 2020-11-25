@@ -43,11 +43,26 @@ int main(int argc, char *argv[])
     */
 
     size_t fps = 10;
-
     VideoCaptureSimu cap(fps);
     MotionBuffer buf(20);
     cv::Mat frame;
     int cnt = 0;
+    int value = 0;
+
+    /*
+    std::deque<int> buffer;
+    while (cnt < 10) {
+        buffer.push_front(++cnt);
+    }
+    while (cnt > 0) {
+        value = buffer.back();
+        cout << value << endl;
+        buffer.pop_back();
+        --cnt;
+    }
+    return 0;
+    */
+
     /*
     cv::VideoWriter videoWriter;
     std::string filename = getTimeStamp(TimeResolution::sec) + ".avi";
@@ -66,24 +81,32 @@ int main(int argc, char *argv[])
         ++cnt;
         cv::imshow("video", frame);
         // videoWriter.write(frame);
+        //std::string imgFile = getTimeStampMs() + ".jpg";
+        //cv::imwrite(imgFile, frame);
 
         // test buffer functions
         cout << endl << "frame: " << cnt << endl;
+
         buf.pushFrameToBuffer(frame);
 
         if (cnt > 10) {
             buf.activateSaveToDisk(true);
         }
 
-        if (cnt > 20) {
+        if (cnt > 10) {
             buf.activateSaveToDisk(false);
         }
+
+        if (cnt > 5) break;
 
         if (cv::waitKey(10) == 27) {
             cout << "esc -> end video processing" << endl;
             break;
         }
     }
+
+    buf.printBuffer();
+
     // videoWriter.release();
     cap.release();
     return 0;
