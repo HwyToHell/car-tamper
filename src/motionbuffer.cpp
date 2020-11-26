@@ -15,12 +15,16 @@ MotionBuffer::MotionBuffer(std::size_t preBufferSize) :
 
 
 MotionBuffer::~MotionBuffer() {
+    DEBUG(getTimeStampMs() << " destructor called");
+    releaseBuffer();
     if (m_thread.joinable()) {
-        releaseBuffer();
         m_thread.join();
-        assert(!m_thread.joinable());
+        DEBUG(getTimeStampMs() << " thread joined");
     }
+    assert(!m_thread.joinable());
+    DEBUG(getTimeStampMs() << " destructor finished");
 }
+
 
 void MotionBuffer::activateSaveToDisk(bool value) {
     m_activateSaveToDisk = value;
@@ -39,7 +43,7 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
         // lock guard needed because of deque size change
         {
         std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-        m_buffer.push_front(frame);
+        m_buffer.push_front(frame.clone());
         m_isBufferAccessible = true;
         }
         m_cndBufferAccess.notify_one();
@@ -47,9 +51,9 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
     // NOT saveToDiskRunning
     } else {
         // no lock guard needed
-        m_buffer.push_front(frame);
-        std::string imgFile = getTimeStampMs() + ".jpg";
-        cv::imwrite(imgFile, frame);
+        m_buffer.push_front(frame.clone());
+        //std::string imgFile = getTimeStampMs() + ".jpg";
+        //cv::imwrite(imgFile, frame);
 
         // delete last frame if ring buffer size exeeded
         if (m_buffer.size() > m_preBufferSize) {
@@ -91,10 +95,15 @@ void MotionBuffer::printBuffer() {
 
 
 void MotionBuffer::releaseBuffer() {
+    DEBUG(getTimeStampMs() << " release called");
     m_terminate = true;
-    std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-    m_isBufferAccessible = true;
+    {
+        std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+        m_activateSaveToDisk = false;
+        m_isBufferAccessible = true;
+    }
     m_cndBufferAccess.notify_one();
+    DEBUG(getTimeStampMs() << " thread notified");
 }
 
 
@@ -111,7 +120,7 @@ void MotionBuffer::saveMotionToDisk() {
             m_cndBufferAccess.wait(bufferLock, [this]{return m_isBufferAccessible;});
         }
         DEBUG(getTimeStampMs() << " wait for newFrameToBuffer finished");
-        if (m_terminate) break;
+        if (m_terminate) return;
 
         // open new video file for writing
         bool startWriting = false;

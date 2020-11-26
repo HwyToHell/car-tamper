@@ -26,6 +26,9 @@ VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond) :
 
 VideoCaptureSimu::~VideoCaptureSimu() {
     release();
+    if (m_thread.joinable()) {
+        m_thread.join();
+    }
     assert(!m_thread.joinable());
 }
 
@@ -132,6 +135,15 @@ bool VideoCaptureSimu::read(cv::Mat& frame) {
 }
 
 
+void VideoCaptureSimu::release() {
+    {
+        std::lock_guard<std::mutex> lock(m_mtxStop);
+        m_isReleased = true;
+    }
+    m_cndStop.notify_one();
+}
+
+
 bool VideoCaptureSimu::set(VidCapProps param, std::string value) {
     bool ret = true;
     switch (param) {
@@ -155,13 +167,4 @@ bool VideoCaptureSimu::set(VidCapProps param, std::string value) {
         }
     }
     return ret;
-}
-
-void VideoCaptureSimu::release() {
-    {
-        std::lock_guard<std::mutex> lock(m_mtxStop);
-        m_isReleased = true;
-    }
-    m_cndStop.notify_one();
-    m_thread.join();
 }
