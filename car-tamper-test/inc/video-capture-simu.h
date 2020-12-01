@@ -10,21 +10,20 @@
 #include <string>
 #include <thread>
 
-enum class VidCapProps {fps, frameSize, isLogging};
 
 class VideoCaptureSimu
 {
 public:
-    VideoCaptureSimu(size_t framesPerSecond = 10);
+    VideoCaptureSimu(size_t framesPerSecond = 10, std::string videoSize = "640x480");
     ~VideoCaptureSimu();
-    double get(int propid);
-    std::string get(VidCapProps param);
-    int     getFrameCount();
-    bool    read(cv::Mat& frame);
-    bool    set(VidCapProps param, std::string value);
-    void    release();
+    double      get(int propid);
+    int         getFrameCount();
+    bool        read(cv::Mat& frame);
+    bool        set(int propid, double value);
+    void        release();
 private:
-    void generateFrame(size_t fps);
+    void generateFrame();
+    bool selectVideoSize(std::string videoSize);
     const std::map<std::string, cv::Size> m_availVideoSizes;
     std::condition_variable m_cndNewFrame;
     std::condition_variable m_cndStop;

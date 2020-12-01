@@ -23,7 +23,7 @@ void printParams(cv::VideoCapture& vidCap) {
 
 
 // test read opencv video capture
-int main(int argc, char *argv[])
+int main_write(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;

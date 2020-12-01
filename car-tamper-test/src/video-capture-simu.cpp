@@ -6,11 +6,12 @@
 #include <sstream>
 
 
-VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond) :
+VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond, std::string videoSize) :
     m_availVideoSizes{
         {"320x240", cv::Size(320,240)},
         {"640x480", cv::Size(640,480)},
-        {"1024x768", cv::Size(1024,768)}
+        {"1024x768", cv::Size(1024,768)},
+        {"1920x1080", cv::Size(1920,1080)}
     },
     m_cntFrame{0},
     m_fps{framesPerSecond},
@@ -20,7 +21,8 @@ VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond) :
     m_isReleased{false}
 
 {
-    m_thread = std::thread(&VideoCaptureSimu::generateFrame, this, framesPerSecond);
+    selectVideoSize(videoSize);
+    m_thread = std::thread(&VideoCaptureSimu::generateFrame, this);
 }
 
 
@@ -32,7 +34,9 @@ VideoCaptureSimu::~VideoCaptureSimu() {
     assert(!m_thread.joinable());
 }
 
-
+/*
+ * return synthetic frame with time stamp in ms
+ */
 cv::Mat frameTimeStamp(cv::Size frameSize) {
     const cv::Scalar black  = cv::Scalar(0,0,0);
     const cv::Scalar red    = cv::Scalar(0,0,255);
@@ -40,13 +44,17 @@ cv::Mat frameTimeStamp(cv::Size frameSize) {
     std::string timeStamp = getTimeStamp(TimeResolution::ms);
     cv::putText(frame, timeStamp, cv::Point(10,50),
                 cv::FONT_HERSHEY_SIMPLEX, 1, red, 2);
-
     return frame;
 }
 
-void VideoCaptureSimu::generateFrame(size_t fps) {
-    size_t msPerFrame = 1000 / fps;
-    auto durationPerFrame = std::chrono::milliseconds(msPerFrame);
+
+/*
+ * generate synthetic frame according to frame rate in concurrent thread
+ * new frame with time stamp watermark and frame count encoded in pixel(0,0)
+ * main thread notified after new frame available
+ */
+void VideoCaptureSimu::generateFrame() {
+    auto durationPerFrame = std::chrono::milliseconds(1000 / m_fps);
     if (m_isLogging) {
         std::cout << "frame duration: " << durationPerFrame.count() << std::endl;
     }
@@ -55,6 +63,10 @@ void VideoCaptureSimu::generateFrame(size_t fps) {
         {
             std::lock_guard<std::mutex> newFrameLock(m_mtxNewFrame);
             m_sourceFrame = frameTimeStamp(m_frameSize);
+            durationPerFrame = std::chrono::milliseconds(1000 / m_fps);
+
+            // encode frame count in first pixel as int
+            m_sourceFrame.at<int>(0) = m_cntFrame;
             m_isNewFrame = true;
             ++m_cntFrame;
             if (m_isLogging) {
@@ -62,7 +74,7 @@ void VideoCaptureSimu::generateFrame(size_t fps) {
             }
         }
         m_cndNewFrame.notify_one();
-        // std::this_thread::sleep_for(durationPerFrame);
+
 
         {
             std::unique_lock<std::mutex> stopLock(m_mtxStop);
@@ -82,27 +94,9 @@ void VideoCaptureSimu::generateFrame(size_t fps) {
 }
 
 
-std::string VideoCaptureSimu::get(VidCapProps param) {
-    std::string ret = "";
-    switch (param) {
-    case VidCapProps::fps: {
-        ret = std::to_string(m_fps);
-        break;
-        }
-    case VidCapProps::frameSize: {
-        std::stringstream ss;
-        ss << m_frameSize;
-        ret = ss.str();
-        break;
-        }
-    case VidCapProps::isLogging: {
-        ret = std::to_string(m_isLogging);
-        break;
-        }
-    }
-    return ret;
-}
-
+/*
+ * read capture properties in same format as cv::VideoCapture
+ */
 double VideoCaptureSimu::get(int propid) {
     switch (propid) {
     case cv::CAP_PROP_FPS:
@@ -115,7 +109,6 @@ double VideoCaptureSimu::get(int propid) {
         return 0;
     }
 }
-
 
 
 int VideoCaptureSimu::getFrameCount() {
@@ -144,27 +137,54 @@ void VideoCaptureSimu::release() {
 }
 
 
-bool VideoCaptureSimu::set(VidCapProps param, std::string value) {
-    bool ret = true;
-    switch (param) {
-    case VidCapProps::isLogging: {
-        m_isLogging = std::stoul(value) > 0 ? true : false;
-        break;
-        }
-    case VidCapProps::fps: {
-        size_t fps = std::stoul(value);
-        m_fps = ((fps > 100 ? 100 : fps) < 1 ? 1 : fps);
-        break;
-        }
-    case VidCapProps::frameSize: {
-        if (m_availVideoSizes.find(value) != m_availVideoSizes.end()) {
-            m_frameSize = m_availVideoSizes.at(value);
-        } else {
-            std::cout << "video size: " << value <<" not known" << std::endl;
-            ret = false;
-        }
-        break;
+bool VideoCaptureSimu::selectVideoSize(std::string videoSize) {
+    for (std::pair<std::string, cv::Size> elem : m_availVideoSizes) {
+        if (elem.first.find(videoSize) != std::string::npos) {
+            m_frameSize = elem.second;
+            std::cout << "video size: " << m_frameSize <<" selected" << std::endl;
+            return true;
         }
     }
-    return ret;
+    std::cout << "video size: " << videoSize <<" not selectable" << std::endl;
+    return false;
+}
+
+
+/*
+ * write capture properties in same format as cv::VideoCapture
+ */
+bool VideoCaptureSimu::set(int propid, double value) {
+    switch (propid) {
+        case cv::CAP_PROP_FPS: {
+            const size_t fpsMax = 60;
+            const size_t fpsMin = 1;
+            size_t fps = static_cast<size_t>(value);
+            if (fps > fpsMax) {
+                m_fps = fpsMax;
+                std::cout << "fps set to max: " << fps << std::endl;
+            } else {
+                if (fps < 1) {
+                    m_fps = fpsMin;
+                    std::cout << "fps set to min: " << fps << std::endl;
+                } else {
+                    m_fps = fps;
+                    std::cout << "fps set to: " << fps << std::endl;
+                }
+            }
+            return true;
+        }
+
+        case cv::CAP_PROP_FRAME_WIDTH: {
+            std::string width = std::to_string(static_cast<int>(value));
+            return selectVideoSize(width);
+        }
+
+        case cv::CAP_PROP_FRAME_HEIGHT: {
+            std::string height = std::to_string(static_cast<int>(value));
+            return selectVideoSize(height);
+        }
+
+        default:
+            return false;
+    }
 }
