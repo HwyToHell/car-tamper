@@ -2,7 +2,7 @@
 #include <catch.hpp>
 
 
-TEST_CASE("#vc001 get / set", "[VidCapSimu]") {
+TEST_CASE("#mb001 construct", "[MotionBuffer]") {
     VideoCaptureSimu vcs;
     SECTION("set fps in range") {
         const double fpsInRange = 20;
@@ -35,8 +35,7 @@ TEST_CASE("#vc001 get / set", "[VidCapSimu]") {
     }
 }
 
-
-TEST_CASE("#vc002 read frame", "[VidCapSimu]") {
+TEST_CASE("#mb002 read frame", "[MotionBuffer]") {
     VideoCaptureSimu vcs;
     SECTION("set and verify frame size output") {
         cv::Mat frame;

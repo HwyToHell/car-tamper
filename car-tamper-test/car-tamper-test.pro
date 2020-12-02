@@ -19,6 +19,7 @@ LIBS += -lv4l2 -lv4l1
 SOURCES += \
     ../src/motionbuffer.cpp \
     src/main-test-cases.cpp \
+    src/motionbuffer-test.cpp \
     src/vid-cap-simu-test.cpp \
     src/video-capture-simu.cpp
 

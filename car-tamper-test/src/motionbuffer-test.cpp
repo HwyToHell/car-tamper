@@ -35,8 +35,7 @@ TEST_CASE("#vc001 get / set", "[VidCapSimu]") {
     }
 }
 
-
-TEST_CASE("#vc002 read frame", "[VidCapSimu]") {
+TEST_CASE("#vc002 read frame") {
     VideoCaptureSimu vcs;
     SECTION("set and verify frame size output") {
         cv::Mat frame;
