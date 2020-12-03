@@ -43,7 +43,7 @@ int main_write(int argc, char *argv[])
     */
 
 
-    MotionBuffer buf(20);
+    MotionBuffer buf(5);
     cv::Mat frame;
     int cnt = 0;
     size_t fps = 10;
@@ -78,7 +78,7 @@ int main_write(int argc, char *argv[])
 
         buf.pushFrameToBuffer(frame);
 
-        if (cnt > 5) {
+        if (cnt > 10) {
             buf.activateSaveToDisk(true);
         }
 
@@ -86,7 +86,7 @@ int main_write(int argc, char *argv[])
             buf.activateSaveToDisk(false);
         }
 
-        if (cnt > 50) break;
+        if (cnt > 25) break;
 
 
         if (cv::waitKey(10) == 27) {

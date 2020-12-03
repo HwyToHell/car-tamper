@@ -1,6 +1,7 @@
 TEMPLATE = app
 TARGET = tamper
-QT -= gui
+#QT -= gui
+QT += core gui widgets
 
 CONFIG += c++14 console
 CONFIG -= app_bundle
@@ -22,6 +23,8 @@ SOURCES += \
     ../car-tamper-test/src/video-capture-simu.cpp \
     ../src/backgroundsubtraction.cpp \
     ../src/main-mat.cpp \
+    ../src/main-read.cpp \
+    ../src/main-verify-write.cpp \
     ../src/main-write.cpp \
     ../src/motionbuffer.cpp
 
