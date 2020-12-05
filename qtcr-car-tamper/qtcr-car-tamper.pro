@@ -17,7 +17,8 @@ LIBS += -lv4l2 -lv4l1
 HEADERS += \
     ../car-tamper-test/inc/video-capture-simu.h \
     ../inc/backgroundsubtraction.h \
-    ../inc/motionbuffer.h
+    ../inc/motionbuffer.h \
+    ../inc/time-stamp.h
 
 SOURCES += \
     ../car-tamper-test/src/video-capture-simu.cpp \
@@ -26,7 +27,8 @@ SOURCES += \
     ../src/main-read.cpp \
     ../src/main-verify-write.cpp \
     ../src/main-write.cpp \
-    ../src/motionbuffer.cpp
+    ../src/motionbuffer.cpp \
+    ../src/time-stamp.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

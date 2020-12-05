@@ -1,6 +1,67 @@
 #include "../inc/motionbuffer.h"
+#include "../inc/time-stamp.h"
 
 
+// LogFrame //////////////////////////////////////////////////////////////////
+LogFrame::LogFrame(std::string subDir) {
+    std::string logDir = cv::utils::fs::getcwd();
+
+    if (!subDir.empty()) {
+        logDir += "/";
+        logDir += subDir;
+        if (cv::utils::fs::exists(logDir) && cv::utils::fs::isDirectory(logDir)) {
+            std::cout << "log dir already exists: " << subDir << std::endl;
+            m_logSubDir = subDir + "/";
+
+        // log dir does not exist yet
+        } else {
+            if (cv::utils::fs::createDirectory(subDir)) {
+                std::cout << "log dir created: " << subDir << std::endl;
+                m_logSubDir = subDir + "/";
+            } else {
+                std::cout << "cannot create log dir: " << subDir << std::endl;
+                std::cout << "use current directory instead" << std::endl;
+            }
+        }
+    }
+}
+
+
+LogFrame::~LogFrame() {
+    close();
+}
+
+
+void LogFrame::close() {
+    if (m_logFile.isOpened())
+        m_logFile.release();
+}
+
+
+bool LogFrame::create() {
+    std::string fileName = m_logSubDir + getTimeStamp(TimeResolution::ms_NoBlank);
+    fileName += ".json";
+    if (m_logFile.open(fileName, cv::FileStorage::Mode::WRITE)) {
+        std::cout << "log file created: " << fileName << std::endl;
+    } else {
+        std::cout << "cannot create log file: " << fileName << std::endl;
+    }
+    return m_logFile.isOpened();
+}
+
+
+void LogFrame::write(cv::Mat frame) {
+    int rows = frame.rows;
+    std::string timeStampAsKey = "_" + getTimeStamp(TimeResolution::ms_NoBlank);
+    m_logFile << timeStampAsKey;
+    m_logFile << "{" << "frame count" << frame.at<int>(0,0);
+    m_logFile <<        "time stamp" << frame.at<int>(0,rows - 1) << "}";
+}
+
+
+
+
+// MotionBuffer ///////////////////////////////////////////////////////////////
 MotionBuffer::MotionBuffer(std::size_t preBufferSize) :
     m_activateSaveToDisk{false},
     m_fps{10},
@@ -176,22 +237,5 @@ void MotionBuffer::saveMotionToDisk() {
 }
 
 
-std::string getTimeStamp(TimeResolution resolution) {
-    // time stamp in std::chrono format
-    auto nowTimePoint = std::chrono::system_clock::now();
-    auto nowMilliSec = std::chrono::duration_cast<std::chrono::milliseconds>
-            (nowTimePoint.time_since_epoch());
-    auto nowSec = std::chrono::duration_cast<std::chrono::seconds>(nowMilliSec);
+// Functions //////////////////////////////////////////////////////////////////
 
-    // convert seconds to time_t for pretty printing with put_time
-    std::time_t nowSecTimeT = nowSec.count();
-
-    std::stringstream timeStamp;
-    timeStamp << std::put_time(std::localtime(&nowSecTimeT), "%F %T");
-    if (resolution == TimeResolution::ms) {
-        long nowMilliSecRemainder = nowMilliSec.count() % 1000;
-        timeStamp << "." << nowMilliSecRemainder;
-    }
-
-    return timeStamp.str();
-}

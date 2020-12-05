@@ -39,4 +39,4 @@ private:
     std::thread m_thread;
 };
 
-#endif // MOTIONBUFFER_H
+#endif // VIDEOCAPTURESIMU_H

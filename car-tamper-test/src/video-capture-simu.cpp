@@ -1,5 +1,6 @@
 #include "../inc/video-capture-simu.h"
 #include "../../inc/motionbuffer.h"
+#include "../../inc/time-stamp.h"
 
 #include <cassert>
 #include <functional>
@@ -50,7 +51,8 @@ cv::Mat frameTimeStamp(cv::Size frameSize) {
 
 /*
  * generate synthetic frame according to frame rate in concurrent thread
- * new frame with time stamp watermark and frame count encoded in pixel(0,0)
+ * new frame with printed time stamp watermark, frame count encoded in pixel(0,0)
+ * and time stamp (ms) as int in pixel(0,height)
  * main thread notified after new frame available
  */
 void VideoCaptureSimu::generateFrame() {
@@ -59,14 +61,20 @@ void VideoCaptureSimu::generateFrame() {
         std::cout << "frame duration: " << durationPerFrame.count() << std::endl;
     }
 
+    std::chrono::system_clock::time_point startTimePoint = std::chrono::system_clock::now();
+
     while (!m_isReleased) {
         {
             std::lock_guard<std::mutex> newFrameLock(m_mtxNewFrame);
             m_sourceFrame = frameTimeStamp(m_frameSize);
             durationPerFrame = std::chrono::milliseconds(1000 / m_fps);
 
-            // encode frame count in first pixel as int
-            m_sourceFrame.at<int>(0) = m_cntFrame;
+            // encode frame count as int in first pixel
+            m_sourceFrame.at<int>(0,0) = m_cntFrame;
+
+            // encode time stamp in ms as int in first pixel of last row
+            m_sourceFrame.at<int>(0,m_sourceFrame.rows-1) = static_cast<int>(elapsedMs(startTimePoint));
+
             m_isNewFrame = true;
             ++m_cntFrame;
             if (m_isLogging) {

@@ -1,8 +1,10 @@
 #ifndef MOTIONBUFFER_H
 #define MOTIONBUFFER_H
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/filesystem.hpp>
+#include <opencv2/core/persistence.hpp>
 
-#include <chrono>
+// #include <chrono>
 #include <condition_variable>
 #include <deque>
 #include <mutex>
@@ -17,26 +19,40 @@
     #define DEBUG(x) do {} while (0)
 #endif
 
-
-struct Logger {
-    bool overflow;
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> taskBegin;
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> taskEnd;
-    std::chrono::milliseconds taskTimeElapsed;
+/*
+ * helper class for unit testing of MotionBuffer
+ * writes frame count and frame time stamp to file
+ */
+class LogFrame {
+public:
+    LogFrame(std::string subDir = "");
+    ~LogFrame();
+    void close();
+    bool create();
+    void write(cv::Mat frame);
+private:
+    std::string m_logSubDir;
+    cv::FileStorage m_logFile;
 };
 
 
+/*
+ * stores frames in ring buffer
+ * after saveToDisk mode has been enabled:
+ * write buffer and consecutive frames to file
+ * until saveToDisk has been disabled
+ */
 class MotionBuffer
 {
 public:
     MotionBuffer(std::size_t preBufferSize = 30);
     ~MotionBuffer();
-    void    activateSaveToDisk(bool value);
-    bool    popBuffer(cv::Mat& out);
-    void    printBuffer();
-    void    pushFrameToBuffer(cv::Mat& frame);
-    void    releaseBuffer();
-    Logger  detectionLogger;
+    void        activateSaveToDisk(bool value);
+    bool        popBuffer(cv::Mat& out);
+    void        printBuffer();
+    void        pushFrameToBuffer(cv::Mat& frame);
+    void        releaseBuffer();
+    LogFrame    logFrameTest;
 private:
     void                    saveMotionToDisk();
     bool                    m_activateSaveToDisk;
@@ -53,14 +69,5 @@ private:
     std::thread             m_thread;
 };
 
-
-enum class TimeResolution {ms, sec};
-
-
-std::string getTimeStamp(TimeResolution resolution);
-
-inline std::string getTimeStampMs() {
-    return getTimeStamp(TimeResolution::ms);
-};
 
 #endif // MOTIONBUFFER_H
