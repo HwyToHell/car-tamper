@@ -12,7 +12,7 @@
 
 void printParams(cv::VideoCapture& vidCap) {
     using namespace std;
-    //cout << "backend name: " << vidCap.getBackendName() << endl;
+    cout << "backend name: " << vidCap.getBackendName() << endl;
     cout << "backend #:    " << vidCap.get(cv::CAP_PROP_BACKEND) << endl;
     cout << "mode:         " << vidCap.get(cv::CAP_PROP_MODE) << endl;
     cout << "fps:          " << vidCap.get(cv::CAP_PROP_FPS) << endl;
@@ -22,14 +22,17 @@ void printParams(cv::VideoCapture& vidCap) {
 }
 
 
-// test read opencv video capture
+// test cv::VideoCapture (read from web cam), get and set parameters,
+// write video with cv::VideoWriter
 int main_write(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;
 
-    //cout << cv::getBuildInformation() << endl;
-    /* test vid cap get and set
+    /*
+     * test vid cap get and set
+
+    cout << cv::getBuildInformation() << endl;
     cv::VideoCapture cap;
     cap.open(0);
     printParams(cap);
@@ -42,12 +45,12 @@ int main_write(int argc, char *argv[])
     cout << "height:  " << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << endl;
     */
 
-
-    MotionBuffer buf(5);
-    cv::Mat frame;
-    int cnt = 0;
     size_t fps = 10;
     VideoCaptureSimu cap(fps);
+
+    MotionBuffer buf(5, cap.get(cv::CAP_PROP_FPS));
+    cv::Mat frame;
+    int cnt = 0;
     //cv::VideoCapture cap(0);
 
     /*
@@ -76,7 +79,7 @@ int main_write(int argc, char *argv[])
         cout << endl << "frame: " << cnt << endl;
 
 
-        buf.pushFrameToBuffer(frame);
+        buf.pushToBuffer(frame);
 
         if (cnt > 10) {
             buf.activateSaveToDisk(true);

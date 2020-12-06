@@ -17,7 +17,9 @@ RSpec: requirements
    main-cap:			test video capture loop
    main-clock:			test std::chrono
    main-mat:			test cv::Mat
-   main-read: 			test video capture from file with Qt file picker
-   main-write: 			test cv::VideoWriter
+   main-qt-file-picker:	test video capture from file (qt file picker)
+   main-read: 			test video capture from file (cmd line arg)
+   main-write: 			test cv::VideoWriter and cv::VideoCapture get & set
    motionbuffer.cpp:	ring buffer class with saveToDisk capability
    save-main: 			test motion detection in separate thread
+

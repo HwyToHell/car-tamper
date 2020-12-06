@@ -1,8 +1,10 @@
 #include "../inc/motionbuffer.h"
 #include "../inc/time-stamp.h"
 
+#define UNIT_TEST
 
-// LogFrame //////////////////////////////////////////////////////////////////
+
+/* LogFrame ******************************************************************/
 LogFrame::LogFrame(std::string subDir) {
     std::string logDir = cv::utils::fs::getcwd();
 
@@ -61,17 +63,34 @@ void LogFrame::write(cv::Mat frame) {
 
 
 
-// MotionBuffer ///////////////////////////////////////////////////////////////
-MotionBuffer::MotionBuffer(std::size_t preBufferSize) :
+/* MotionBuffer **************************************************************/
+MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest) :
     m_activateSaveToDisk{false},
-    m_fps{10},
+    m_fps{fpsOutput},
     m_frameSize{cv::Size(640,480)},
     m_isBufferAccessible{false},
     m_isSaveToDiskRunning{false},
-    m_preBufferSize{preBufferSize},
+    m_logAtTest{logDirForTest},
     m_terminate{false}
 {
+    /* limit preBufferSize in order to
+     * have saveToDisk algo work properly (min: 1)
+     * avoid heap memory shortage (max: 60) */
+    if (preBufferSize < 1) {
+        m_preBufferSize = 1;
+    } else if (preBufferSize > 60) {
+        m_preBufferSize = 60;
+    } else {
+        m_preBufferSize = preBufferSize;
+    }
     m_thread = std::thread(&MotionBuffer::saveMotionToDisk, this);
+}
+
+
+MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput) :
+    MotionBuffer{preBufferSize, fpsOutput, ""}
+{
+
 }
 
 
@@ -92,7 +111,7 @@ void MotionBuffer::activateSaveToDisk(bool value) {
 }
 
 
-void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
+void MotionBuffer::pushToBuffer(cv::Mat& frame) {
     bool saveToDiskRunning = false;
     {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
         saveToDiskRunning = m_isSaveToDiskRunning;
@@ -113,8 +132,6 @@ void MotionBuffer::pushFrameToBuffer(cv::Mat& frame) {
     } else {
         // no lock guard needed
         m_buffer.push_front(frame.clone());
-        //std::string imgFile = getTimeStampMs() + ".jpg";
-        //cv::imwrite(imgFile, frame);
 
         // delete last frame if ring buffer size exeeded
         if (m_buffer.size() > m_preBufferSize) {
@@ -198,7 +215,11 @@ void MotionBuffer::saveMotionToDisk() {
                 m_terminate = true;
                 break;
             }
+            #ifdef UNIT_TEST
+            m_logAtTest.create();
+            #endif
             DEBUG(getTimeStampMs() << " video file created");
+
             std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
             m_isSaveToDiskRunning = true;
         }
@@ -213,10 +234,11 @@ void MotionBuffer::saveMotionToDisk() {
             manyFramesAvailabe = m_buffer.size() > 1;
             }
             DEBUG(getTimeStampMs() << " last frame copied");
-            //std::string imgFile = getTimeStampMs() + ".jpg";
-            //cv::imwrite(imgFile, lastFrame);
 
             videoWriter.write(lastFrame);
+            #ifdef UNIT_TEST
+            m_logAtTest.write(lastFrame);
+            #endif
             DEBUG(getTimeStampMs() << " last frame written");
 
         } // while write frames until buffer emptied
@@ -229,6 +251,9 @@ void MotionBuffer::saveMotionToDisk() {
         if (stopWriting) {
             m_isSaveToDiskRunning = false;
             videoWriter.release();
+            #ifdef UNIT_TEST
+            m_logAtTest.close();
+            #endif
             DEBUG(getTimeStampMs() << " videoWriter released");
         }
 
@@ -237,5 +262,4 @@ void MotionBuffer::saveMotionToDisk() {
 }
 
 
-// Functions //////////////////////////////////////////////////////////////////
-
+/* Functions *****************************************************************/

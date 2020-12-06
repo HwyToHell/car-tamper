@@ -45,26 +45,32 @@ private:
 class MotionBuffer
 {
 public:
-    MotionBuffer(std::size_t preBufferSize = 30);
+    MotionBuffer(std::size_t preBufferSize, double fpsOutput);
+    MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest);
     ~MotionBuffer();
     void        activateSaveToDisk(bool value);
     bool        popBuffer(cv::Mat& out);
     void        printBuffer();
-    void        pushFrameToBuffer(cv::Mat& frame);
+    void        pushToBuffer(cv::Mat& frame);
     void        releaseBuffer();
-    LogFrame    logFrameTest;
 private:
     void                    saveMotionToDisk();
     bool                    m_activateSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
+    /* frames per second for output video */
     double                  m_fps;
     int                     m_frameCount;
     cv::Size                m_frameSize;
     bool                    m_isBufferAccessible;
     bool                    m_isSaveToDiskRunning;
+    /* logger for frame count and timinge, used in unit test,
+     * enable with #define UNIT_TEST */
+    LogFrame                m_logAtTest;
     std::mutex              m_mtxBufferAccess;
-    const std::size_t       m_preBufferSize;
+    /* preBufferSize must be at least 1 for saveToDisk algo to work
+     * and is limited to 60 in order to avoid heap memory shortage */
+    std::size_t             m_preBufferSize;
     bool                    m_terminate;
     std::thread             m_thread;
 };
