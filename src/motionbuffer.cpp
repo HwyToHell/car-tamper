@@ -71,17 +71,23 @@ MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::str
     m_isBufferAccessible{false},
     m_isSaveToDiskRunning{false},
     m_logAtTest{logDirForTest},
+    m_preBufferSize{preBufferSize},
     m_terminate{false}
 {
-    /* limit preBufferSize in order to
-     * have saveToDisk algo work properly (min: 1)
+    /* limit preBufferSize in order to have saveToDisk algo work properly (min: 1)
      * avoid heap memory shortage (max: 60) */
     if (preBufferSize < 1) {
         m_preBufferSize = 1;
     } else if (preBufferSize > 60) {
         m_preBufferSize = 60;
-    } else {
-        m_preBufferSize = preBufferSize;
+    }
+    /* limit frames per second for output video in order to
+     * observe reasonable motion (min: 1)
+     * avoid processor ressource shortage (max: 60) */
+    if (fpsOutput < 1) {
+        m_fps = 1;
+    } else if (fpsOutput > 60) {
+        m_fps = 60;
     }
     m_thread = std::thread(&MotionBuffer::saveMotionToDisk, this);
 }

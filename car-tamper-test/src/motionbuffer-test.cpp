@@ -1,77 +1,41 @@
-#include "../inc/video-capture-simu.h"
+#include "../inc/motionbuffer.h"
 #include <catch.hpp>
 
 
 TEST_CASE("#mb001 construct", "[MotionBuffer]") {
-    VideoCaptureSimu vcs;
-    SECTION("set fps in range") {
-        const double fpsInRange = 20;
-        vcs.set(cv::CAP_PROP_FPS, fpsInRange);
-        REQUIRE(vcs.get(cv::CAP_PROP_FPS) == Approx(fpsInRange));
+    const std::string logDir("logDir");
+
+    // buffer size verification: determine number of written frames from logFile
+    SECTION("preBufferSize below min") {
+
     }
-    SECTION("set fps larger than max") {
-        const double fpsMax = 60;
-        vcs.set(cv::CAP_PROP_FPS, 100);
-        REQUIRE(vcs.get(cv::CAP_PROP_FPS) == Approx(fpsMax));
+    SECTION("preBufferSize above max") {
+
     }
-    SECTION("set fps larger than max") {
-        const double fpsMin = 1;
-        vcs.set(cv::CAP_PROP_FPS, 0);
-        REQUIRE(vcs.get(cv::CAP_PROP_FPS) == Approx(fpsMin));
+    SECTION("preBufferSize in range") {
+
     }
-    SECTION("set frame width in range") {
-        const double width = 320;
-        REQUIRE(vcs.set(cv::CAP_PROP_FRAME_WIDTH, width));
-        REQUIRE(vcs.get(cv::CAP_PROP_FRAME_WIDTH) == Approx(width));
+
+    // fps verification: re-read written output video and get frame size
+    SECTION("fps below min") {
+        const double fpsBelowMin = 0;
+        MotionBuffer mb(1, fpsBelowMin, logDir);
+
+        REQUIRE(true == true);
     }
-    SECTION("set frame width out of range") {
-        const double width = 888;
-        REQUIRE(!vcs.set(cv::CAP_PROP_FRAME_WIDTH, width));
+    SECTION("fps above max") {
+
     }
-    SECTION("set frame height in range") {
-        const double height = 768;
-        REQUIRE(vcs.set(cv::CAP_PROP_FRAME_HEIGHT, height));
-        REQUIRE(vcs.get(cv::CAP_PROP_FRAME_HEIGHT) == Approx(height));
+    SECTION("fps in range") {
+
     }
 }
 
-TEST_CASE("#mb002 read frame", "[MotionBuffer]") {
-    VideoCaptureSimu vcs;
-    SECTION("set and verify frame size output") {
-        cv::Mat frame;
-        const double height = 1080;
-        REQUIRE(vcs.set(cv::CAP_PROP_FRAME_HEIGHT, height));
-        REQUIRE(vcs.get(cv::CAP_PROP_FRAME_HEIGHT) == Approx(height));
-        vcs.read(frame);
-        vcs.read(frame);
-        REQUIRE(frame.size().height == Approx(height));
-    }
-    SECTION("verify frame timing") {
-        const double fps = 60;
-        vcs.set(cv::CAP_PROP_FPS, fps);
-        REQUIRE(vcs.get(cv::CAP_PROP_FPS) == Approx(fps));
-        cv::Mat frame;
-        auto start = std::chrono::system_clock::now();
-        auto end  = std::chrono::system_clock::now();
-        const int nLoops = 1;
-        for (int i = 0; i <= nLoops; ++i) {
-            vcs.read(frame);
-            if (i == 0) {
-                start = std::chrono::system_clock::now();
-            }
-            if (i == 1) {
-                end = std::chrono::system_clock::now();
-            }
-        }
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        REQUIRE(elapsed.count() == Approx(1000 / fps).epsilon(0.05));
-        //std::cout << "elapsed ms: " << elapsed.count() << std::endl;
-    }
-    SECTION("verify frame count is encoded in first pixel") {
-        cv::Mat frame;
-        vcs.read(frame);
-        REQUIRE(frame.at<int>(0) == 0);
-        vcs.read(frame);
-        REQUIRE(frame.at<int>(0) == 1);
-    }
+TEST_CASE("#mb002 save to disk", "[MotionBuffer]") {
+
+    // verify: frames order, timing, video output directory, video output file name
+
 }
+
+
+// clean up logDir after executing tests
