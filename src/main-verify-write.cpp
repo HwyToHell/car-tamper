@@ -22,7 +22,7 @@
 
 
 // test MotionBuffer saveToDisk
-int main(int argc, char *argv[]) {
+int main_verify_write(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
 

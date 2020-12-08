@@ -22,7 +22,7 @@
 
 
 // test read opencv video capture
-int main(int argc, char *argv[])
+int main_qt_file(int argc, char *argv[])
 {
     std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
     QApplication a(argc, argv);
