@@ -15,7 +15,7 @@ LogFrame::LogFrame(std::string subDir) {
             std::cout << "log dir already exists: " << subDir << std::endl;
             m_logSubDir = subDir + "/";
 
-        // log dir does not exist yet
+        /* log dir does not exist yet */
         } else {
             if (cv::utils::fs::createDirectory(subDir)) {
                 std::cout << "log dir created: " << subDir << std::endl;
@@ -45,10 +45,16 @@ bool LogFrame::create() {
     fileName += ".json";
     if (m_logFile.open(fileName, cv::FileStorage::Mode::WRITE)) {
         std::cout << "log file created: " << fileName << std::endl;
+        m_logFileName = fileName;
     } else {
         std::cout << "cannot create log file: " << fileName << std::endl;
     }
     return m_logFile.isOpened();
+}
+
+
+std::string LogFrame::getLogFileRelPath() {
+    return m_logFileName;
 }
 
 
@@ -65,10 +71,11 @@ void LogFrame::write(cv::Mat frame) {
 
 /* MotionBuffer **************************************************************/
 MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest) :
-    m_activateSaveToDisk{false},
+    m_setSaveToDisk{false},
     m_fps{fpsOutput},
     m_frameSize{cv::Size(640,480)},
     m_isBufferAccessible{false},
+    m_isNewMotionFile{false},
     m_isSaveToDiskRunning{false},
     m_logAtTest{logDirForTest},
     m_preBufferSize{preBufferSize},
@@ -112,8 +119,23 @@ MotionBuffer::~MotionBuffer() {
 }
 
 
-void MotionBuffer::activateSaveToDisk(bool value) {
-    m_activateSaveToDisk = value;
+std::string MotionBuffer::getLogFileRelPath() {
+    return m_logAtTest.getLogFileRelPath();
+}
+
+
+std::string MotionBuffer::getMotionFileName() {
+    return m_motionFileName;
+}
+
+
+bool MotionBuffer::isNewMotionFile() {
+    return m_isNewMotionFile;
+}
+
+
+bool MotionBuffer::isSaveToDiskRunning() {
+    return m_isSaveToDiskRunning;
 }
 
 
@@ -126,7 +148,7 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame) {
           << ", saveToDiskRunning: " << saveToDiskRunning);
 
     if (saveToDiskRunning) {
-        // lock guard needed because of deque size change
+        /* lock guard needed because of deque size change */
         {
         std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
         m_buffer.push_front(frame.clone());
@@ -134,19 +156,20 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame) {
         }
         m_cndBufferAccess.notify_one();
 
-    // NOT saveToDiskRunning
+    /* NOT saveToDiskRunning */
     } else {
         // no lock guard needed
         m_buffer.push_front(frame.clone());
 
-        // delete last frame if ring buffer size exeeded
+        /* delete last frame if ring buffer size exeeded */
         if (m_buffer.size() > m_preBufferSize) {
             m_buffer.pop_back();
         }
         DEBUG("buffer size: " << m_buffer.size());
 
-        // notify thread that -> will set saveToDiskRunning
-        if (m_activateSaveToDisk) {
+        /* notify thread to start saveToDisk
+         * -> will set saveToDiskRunning in other thread */
+        if (m_setSaveToDisk) {
             std::cout << "save to disk activated" << std::endl;
             m_isBufferAccessible = true;
             m_cndBufferAccess.notify_one();
@@ -183,7 +206,7 @@ void MotionBuffer::releaseBuffer() {
     m_terminate = true;
     {
         std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-        m_activateSaveToDisk = false;
+        m_setSaveToDisk = false;
         m_isBufferAccessible = true;
     }
     m_cndBufferAccess.notify_one();
@@ -191,15 +214,20 @@ void MotionBuffer::releaseBuffer() {
 }
 
 
+void MotionBuffer::resetNewMotionFile() {
+    m_isNewMotionFile = false;
+}
+
+
 void MotionBuffer::saveMotionToDisk() {
-    // run thread func until terminate signal is received
+    /* run thread func until terminate signal has been received */
     cv::VideoWriter videoWriter;
     cv::Mat lastFrame;
     DEBUG(getTimeStampMs() << " wait for newFrameToBuffer started");
 
     while (!m_terminate) {
 
-        // wait for new frame pushed to buffer
+        /* wait for new frame pushed to buffer */
         {   std::unique_lock<std::mutex> bufferLock(m_mtxBufferAccess);
             m_cndBufferAccess.wait(bufferLock, [this]{return m_isBufferAccessible;});
         }
@@ -209,14 +237,17 @@ void MotionBuffer::saveMotionToDisk() {
         // open new video file for writing
         bool startWriting = false;
         {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-            startWriting = m_activateSaveToDisk && !m_isSaveToDiskRunning;
+            startWriting = m_setSaveToDisk && !m_isSaveToDiskRunning;
+            // TODO possible extension:
+            //      check, if m_isNewMotionFile has been reset to ensere proper fetching of file name
+            //      in module LocalToCloud
         }
         if (startWriting) {
-            std::string filename = getTimeStamp(TimeResolution::sec) + ".avi";
+            std::string m_motionFileName = getTimeStamp(TimeResolution::sec) + ".avi";
             int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
 
-            if(!videoWriter.open(filename, fourcc, m_fps, m_frameSize)) {
-                std::cout << "cannot open file: " << filename << std::endl;
+            if(!videoWriter.open(m_motionFileName, fourcc, m_fps, m_frameSize)) {
+                std::cout << "cannot open file: " << m_motionFileName << std::endl;
                 m_isSaveToDiskRunning = false;
                 m_terminate = true;
                 break;
@@ -230,7 +261,7 @@ void MotionBuffer::saveMotionToDisk() {
             m_isSaveToDiskRunning = true;
         }
 
-        // continue writing frames until buffer emptied
+        /* continue writing frames until buffer emptied */
         bool manyFramesAvailabe = true;
         while (manyFramesAvailabe) {
             {
@@ -247,12 +278,12 @@ void MotionBuffer::saveMotionToDisk() {
             #endif
             DEBUG(getTimeStampMs() << " last frame written");
 
-        } // while write frames until buffer emptied
+        } /* while write frames until buffer emptied */
 
         bool stopWriting = false;
         {   std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
             m_isBufferAccessible = false;
-            stopWriting = !m_activateSaveToDisk;
+            stopWriting = !m_setSaveToDisk;
         }
         if (stopWriting) {
             m_isSaveToDiskRunning = false;
@@ -261,11 +292,18 @@ void MotionBuffer::saveMotionToDisk() {
             m_logAtTest.close();
             #endif
             DEBUG(getTimeStampMs() << " videoWriter released");
+
+            /* reset isNewMotionFile in module LocalToCloud */
+            m_isNewMotionFile = true;
         }
 
 
-    } // while thread not terminated
+    } /* while thread not terminated */
 }
 
+
+void MotionBuffer::setSaveToDisk(bool value) {
+    m_setSaveToDisk = value;
+}
 
 /* Functions *****************************************************************/

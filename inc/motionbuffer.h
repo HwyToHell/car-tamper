@@ -27,12 +27,15 @@ class LogFrame {
 public:
     LogFrame(std::string subDir = "");
     ~LogFrame();
-    void close();
-    bool create();
-    void write(cv::Mat frame);
+    void        close();
+    bool        create();
+    std::string getLogFileRelPath();
+    void        write(cv::Mat frame);
 private:
-    std::string m_logSubDir;
     cv::FileStorage m_logFile;
+    std::string     m_logFileName;
+    std::string     m_logSubDir;
+
 };
 
 
@@ -48,14 +51,19 @@ public:
     MotionBuffer(std::size_t preBufferSize, double fpsOutput);
     MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest);
     ~MotionBuffer();
-    void        activateSaveToDisk(bool value);
+    std::string getLogFileRelPath();
+    std::string getMotionFileName();
+    bool        isNewMotionFile();
+    bool        isSaveToDiskRunning();
     bool        popBuffer(cv::Mat& out);
     void        printBuffer();
     void        pushToBuffer(cv::Mat& frame);
     void        releaseBuffer();
+    void        resetNewMotionFile();
+    void        setSaveToDisk(bool value);
 private:
     void                    saveMotionToDisk();
-    bool                    m_activateSaveToDisk;
+    bool                    m_setSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
     /* frames per second for output video */
@@ -63,10 +71,12 @@ private:
     int                     m_frameCount;
     cv::Size                m_frameSize;
     bool                    m_isBufferAccessible;
+    bool                    m_isNewMotionFile;
     bool                    m_isSaveToDiskRunning;
     /* logger for frame count and timinge, used in unit test,
      * enable with #define UNIT_TEST */
     LogFrame                m_logAtTest;
+    std::string             m_motionFileName;
     std::mutex              m_mtxBufferAccess;
     /* preBufferSize must be at least 1 for saveToDisk algo to work
      * and is limited to 60 in order to avoid heap memory shortage */

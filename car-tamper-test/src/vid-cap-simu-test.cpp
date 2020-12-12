@@ -65,7 +65,8 @@ TEST_CASE("#vc002 read frame", "[VidCapSimu]") {
             }
         }
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        REQUIRE(elapsed.count() == Approx(1000 / fps).epsilon(0.05));
+        // allow for 10% deviation
+        REQUIRE(elapsed.count() == Approx(1000 / fps).epsilon(0.1));
         //std::cout << "elapsed ms: " << elapsed.count() << std::endl;
     }
     SECTION("verify frame count is encoded in first pixel") {

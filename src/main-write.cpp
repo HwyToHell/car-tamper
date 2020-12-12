@@ -82,11 +82,11 @@ int main_write(int argc, char *argv[])
         buf.pushToBuffer(frame);
 
         if (cnt > 10) {
-            buf.activateSaveToDisk(true);
+            buf.setSaveToDisk(true);
         }
 
         if (cnt > 20) {
-            buf.activateSaveToDisk(false);
+            buf.setSaveToDisk(false);
         }
 
         if (cnt > 25) break;

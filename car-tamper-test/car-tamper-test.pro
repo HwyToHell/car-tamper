@@ -18,6 +18,7 @@ LIBS += -lv4l2 -lv4l1
 
 SOURCES += \
     ../src/motionbuffer.cpp \
+    ../src/time-stamp.cpp \
     src/main-test-cases.cpp \
     src/motionbuffer-test.cpp \
     src/vid-cap-simu-test.cpp \
@@ -30,4 +31,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     ../inc/motionbuffer.h \
+    ../inc/time-stamp.h \
     inc/video-capture-simu.h

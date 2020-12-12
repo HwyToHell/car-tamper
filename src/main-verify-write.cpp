@@ -19,8 +19,6 @@
 
 
 
-
-
 // test MotionBuffer saveToDisk
 int main_verify_write(int argc, char *argv[]) {
     (void)argc; (void)argv;
@@ -43,11 +41,11 @@ int main_verify_write(int argc, char *argv[]) {
         buf.pushToBuffer(frame);
 
         if (cnt > 60) {
-            buf.activateSaveToDisk(true);
+            buf.setSaveToDisk(true);
         }
 
         if (cnt > 70) {
-            buf.activateSaveToDisk(false);
+            buf.setSaveToDisk(false);
         }
 
         if (cnt > 72) break;
