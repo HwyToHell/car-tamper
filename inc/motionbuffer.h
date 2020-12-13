@@ -28,7 +28,8 @@ public:
     LogFrame(std::string subDir = "");
     ~LogFrame();
     void        close();
-    bool        create();
+    /* use time stamp as file name, if no file name has been specified */
+    bool        create(std::string fileName = "");
     std::string getLogFileRelPath();
     void        write(cv::Mat frame);
 private:
@@ -52,8 +53,7 @@ public:
     MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest);
     ~MotionBuffer();
     std::string getLogFileRelPath();
-    std::string getMotionFileName();
-    bool        isNewMotionFile();
+    std::string getVideoFileName();
     bool        isSaveToDiskRunning();
     bool        popBuffer(cv::Mat& out);
     void        printBuffer();
@@ -61,28 +61,31 @@ public:
     void        releaseBuffer();
     void        resetNewMotionFile();
     void        setSaveToDisk(bool value);
+    std::string waitForMotionFile();
 private:
     void                    saveMotionToDisk();
     bool                    m_setSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
+    std::condition_variable m_cndNewFile;
     /* frames per second for output video */
     double                  m_fps;
     int                     m_frameCount;
     cv::Size                m_frameSize;
     bool                    m_isBufferAccessible;
-    bool                    m_isNewMotionFile;
+    bool                    m_isNewFile;
     bool                    m_isSaveToDiskRunning;
     /* logger for frame count and timinge, used in unit test,
      * enable with #define UNIT_TEST */
     LogFrame                m_logAtTest;
     std::string             m_motionFileName;
     std::mutex              m_mtxBufferAccess;
+    std::mutex              m_mtxNewFileNotice;
     /* preBufferSize must be at least 1 for saveToDisk algo to work
      * and is limited to 60 in order to avoid heap memory shortage */
     std::size_t             m_preBufferSize;
     bool                    m_terminate;
-    std::thread             m_thread;
+    std::thread             m_threadSaveToDisk;
 };
 
 
