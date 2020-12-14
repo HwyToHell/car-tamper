@@ -52,7 +52,7 @@ std::vector<int> getBufferSamples(cv::FileStorage fs, std::string key) {
 
 
 // test MotionBuffer saveToDisk
-int main(int argc, char *argv[]) {
+int main_read_Json(int argc, char *argv[]) {
     QApplication a(argc, argv);
     using namespace std;
 

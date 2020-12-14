@@ -21,13 +21,13 @@ RSpec: requirements
 	main-read: 				test video capture from file (cmd line arg)
 	main-read-json:			test cv::FileNode by reading json file
 	main-verify-write:		test writing frames to disk
-	main-write: 			test cv::VideoWriter and cv::VideoCapture get & set
+	main-cap-get-set:		test cv::VideoWriter and cv::VideoCapture get & set
 	motionbuffer.cpp:		ring buffer class with saveToDisk capability
 	save-main: 				test motion detection in separate thread
 
 - __car\-tamper__
-   - [FSpec \- Car Tamper.odt]
-   - [RSpec \- Car Tamper.odt]
+   - [FSpec \- Car Tamper.odt]	feature spec with implementaion details
+   - RSpec \- Car Tamper.odt  requirements
    - [ReadMe.md](ReadMe.md)
    - [ToDo.md](ToDo.md)
    - __car\-tamper\-test__
