@@ -26,7 +26,6 @@ SOURCES += \
     ../src/main-mat.cpp \
     ../src/main-read-json.cpp \
     ../src/main-read.cpp \
-    ../src/main-verify-write.cpp \
     ../src/main-write-to-disk.cpp \
     ../src/motionbuffer.cpp \
     ../src/time-stamp.cpp

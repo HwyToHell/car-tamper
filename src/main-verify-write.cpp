@@ -31,7 +31,7 @@ int main_verify_write(int argc, char *argv[]) {
 
 
     const size_t ringBufferSize = 1;
-    MotionBuffer buf(ringBufferSize, fpsSource, "test2");
+    MotionBuffer buf(ringBufferSize, fpsSource, "video", "test2");
 
     cv::Mat frame;
     int cnt = 0;

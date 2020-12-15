@@ -9,9 +9,10 @@
 std::string getTimeStamp(TimeResolution resolution) {
     // time stamp in std::chrono format
     auto nowTimePoint = std::chrono::system_clock::now();
-    auto nowMilliSec = std::chrono::duration_cast<std::chrono::milliseconds>
+    auto nowMicroSec = std::chrono::duration_cast<std::chrono::microseconds>
             (nowTimePoint.time_since_epoch());
-    auto nowSec = std::chrono::duration_cast<std::chrono::seconds>(nowMilliSec);
+    auto nowMilliSec =  std::chrono::duration_cast<std::chrono::milliseconds>(nowMicroSec);
+    auto nowSec = std::chrono::duration_cast<std::chrono::seconds>(nowMicroSec);
 
     // convert seconds to time_t for pretty printing with put_time
     std::time_t nowSecTimeT = nowSec.count();
@@ -34,6 +35,13 @@ std::string getTimeStamp(TimeResolution resolution) {
     if (resolution == TimeResolution::ms_NoBlank) {
         long nowMilliSecRemainder = nowMilliSec.count() % 1000;
         timeStamp << nowMilliSecRemainder << "ms";
+    }
+
+    // add microseconds
+    if (resolution == TimeResolution::micSec_NoBlank) {
+        long nowMilliSecRemainder = nowMilliSec.count() % 1000;
+        long nowMicroSecRemainder = nowMicroSec.count() % 1000;
+        timeStamp << nowMilliSecRemainder << "ms" << nowMicroSecRemainder;
     }
 
     return timeStamp.str();

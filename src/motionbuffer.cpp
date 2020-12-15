@@ -65,7 +65,7 @@ std::string LogFrame::getLogFileRelPath() {
 
 void LogFrame::write(cv::Mat frame) {
     int rows = frame.rows;
-    std::string timeStampAsKey = "_" + getTimeStamp(TimeResolution::ms_NoBlank);
+    std::string timeStampAsKey = "_" + getTimeStamp(TimeResolution::micSec_NoBlank);
     m_logFile << timeStampAsKey;
     m_logFile << "{" << "frame count" << frame.at<int>(0,0);
     m_logFile <<        "time stamp" << frame.at<int>(0,rows - 1) << "}";
@@ -75,7 +75,8 @@ void LogFrame::write(cv::Mat frame) {
 
 
 /* MotionBuffer **************************************************************/
-MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest) :
+MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput,
+                           std::string videoDir, std::string logDirForTest) :
     m_setSaveToDisk{false},
     m_fps{fpsOutput},
     m_frameSize{cv::Size(640,480)},
@@ -93,6 +94,7 @@ MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::str
     } else if (preBufferSize > 60) {
         m_preBufferSize = 60;
     }
+
     /* limit frames per second for output video in order to
      * observe reasonable motion (min: 1)
      * avoid processor ressource shortage (max: 60) */
@@ -101,12 +103,15 @@ MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::str
     } else if (fpsOutput > 60) {
         m_fps = 60;
     }
+
+    setVideoDir(videoDir);
+
     m_threadSaveToDisk = std::thread(&MotionBuffer::saveMotionToDisk, this);
 }
 
 
-MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput) :
-    MotionBuffer{preBufferSize, fpsOutput, ""}
+MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string videoDir) :
+    MotionBuffer{preBufferSize, fpsOutput, videoDir, ""}
 {
 
 }
@@ -165,6 +170,7 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame) {
     }
     DEBUG(getTimeStampMs() << " frame pushed to buffer"
           << ", saveToDiskRunning: " << saveToDiskRunning);
+    DEBUG("buffer size: " << m_buffer.size());
 
     if (saveToDiskRunning) {
         /* lock guard needed because of deque size change */
@@ -184,7 +190,6 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame) {
         if (m_buffer.size() > m_preBufferSize) {
             m_buffer.pop_back();
         }
-        DEBUG("buffer size: " << m_buffer.size());
 
         /* notify thread to start saveToDisk
          * -> will set saveToDiskRunning in other thread */
@@ -193,29 +198,6 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame) {
             m_isBufferAccessible = true;
             m_cndBufferAccess.notify_one();
         }
-    }
-}
-
-
-bool MotionBuffer::popBuffer(cv::Mat& out) {
-    if (m_buffer.size() > 0) {
-        out = m_buffer.back().clone();
-        m_buffer.pop_back();
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
-void MotionBuffer::printBuffer() {
-    std::deque<cv::Mat>::iterator it = m_buffer.begin();
-    int cnt = 0;
-    while ( it != m_buffer.end() ) {
-        std::string imgFile = getTimeStampMs() + ".jpg";
-        cv::imwrite(imgFile, *it);
-        ++it;
-        std::cout << "frame from buffer #" << ++cnt << std::endl;
     }
 }
 
@@ -275,10 +257,11 @@ void MotionBuffer::saveMotionToDisk() {
         if (startWriting) {
             std::string timeStamp = getTimeStamp(TimeResolution::sec_NoBlank);
             m_motionFileName = timeStamp + ".avi";
+            m_videoFilePath = m_videoDirAbs + m_motionFileName;
             int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
 
-            if(!videoWriter.open(m_motionFileName, fourcc, m_fps, m_frameSize)) {
-                std::cout << "cannot open file: " << m_motionFileName << std::endl;
+            if(!videoWriter.open(m_videoFilePath, fourcc, m_fps, m_frameSize)) {
+                std::cout << "cannot open file: " << m_videoFilePath << std::endl;
                 m_isSaveToDiskRunning = false;
                 m_terminate = true;
                 break;
@@ -341,6 +324,31 @@ void MotionBuffer::setSaveToDisk(bool value) {
 }
 
 
+bool MotionBuffer::setVideoDir(std::string subDir) {
+    std::string videoDirAbs = cv::utils::fs::getcwd();
+
+    if (!subDir.empty()) {
+        videoDirAbs += "/";
+        videoDirAbs += subDir;
+        if (cv::utils::fs::exists(videoDirAbs) && cv::utils::fs::isDirectory(videoDirAbs)) {
+            std::cout << "directory already exists: " << subDir << std::endl;
+            m_videoDirAbs += "/";
+
+        /* dir does not exist yet */
+        } else {
+            if (cv::utils::fs::createDirectory(subDir)) {
+                std::cout << "directory created: " << subDir << std::endl;
+                m_videoDirAbs = subDir + "/";
+            } else {
+                std::cout << "cannot create directory: " << subDir << std::endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
 /* to be called from either main thread (test) or localTocloud thread (production) */
 std::string MotionBuffer::waitForMotionFile() {
     std::string videoFileName;
@@ -356,3 +364,4 @@ std::string MotionBuffer::waitForMotionFile() {
 
 
 /* Functions *****************************************************************/
+

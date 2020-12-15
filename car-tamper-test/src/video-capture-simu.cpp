@@ -9,6 +9,7 @@
 
 VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond, std::string videoSize) :
     m_availVideoSizes{
+        {"160x120", cv::Size(160,120)},
         {"320x240", cv::Size(320,240)},
         {"640x480", cv::Size(640,480)},
         {"1024x768", cv::Size(1024,768)},

@@ -4,7 +4,7 @@
 #include <chrono>
 #include <string>
 
-enum class TimeResolution {ms, sec, ms_NoBlank, sec_NoBlank};
+enum class TimeResolution {ms, sec, micSec_NoBlank, ms_NoBlank, sec_NoBlank};
 
 std::string getTimeStamp(TimeResolution resolution);
 

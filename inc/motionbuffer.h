@@ -49,18 +49,18 @@ private:
 class MotionBuffer
 {
 public:
-    MotionBuffer(std::size_t preBufferSize, double fpsOutput);
-    MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string logDirForTest);
+    MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string videoDir = "videos");
+    MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string videoDir = "videos",
+                 std::string logDirForTest = "log");
     ~MotionBuffer();
     std::string getLogFileRelPath();
     std::string getVideoFileName();
     bool        isSaveToDiskRunning();
-    bool        popBuffer(cv::Mat& out);
-    void        printBuffer();
     void        pushToBuffer(cv::Mat& frame);
     void        releaseBuffer();
     void        resetNewMotionFile();
     void        setSaveToDisk(bool value);
+    bool        setVideoDir(std::string subDir);
     std::string waitForMotionFile();
 private:
     void                    saveMotionToDisk();
@@ -86,6 +86,8 @@ private:
     std::size_t             m_preBufferSize;
     bool                    m_terminate;
     std::thread             m_threadSaveToDisk;
+    std::string             m_videoDirAbs;
+    std::string             m_videoFilePath;
 };
 
 

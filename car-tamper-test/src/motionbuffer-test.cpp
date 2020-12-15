@@ -39,13 +39,15 @@ std::vector<int> getBufferSamples(cv::FileStorage fs, std::string key) {
 }
 
 
-// returns video file name
-// start: enable saveToDisk at this frame number
-// stop: disable saveToDisk at this frame number
+/*
+ * returns video file name
+ * start: enable saveToDisk frame number
+ * stop: disable saveToDisk frame number
+ */
 std::string writeToDiskTest(MotionBuffer& buf, VideoCaptureSimu& cap,
                      int start, int stop) {
     cv::Mat frame;
-    for (int count = 0; count < stop+3; ++count) {
+    for (int count = 0; count < stop+5; ++count) {
         std::cout << std::endl << "pass: " << count << std::endl;
 
         // buf = 1 (min value) -> first frame written = start+1
@@ -72,14 +74,30 @@ std::string writeToDiskTest(MotionBuffer& buf, VideoCaptureSimu& cap,
 // TODO clean up logDir after test have been executed successfully
 
 
-// buffer size verification: determine number of written frames from logFile
+/* buffer size verification: determine number of written frames from logFile */
 TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
     const size_t minBufSize = 1;
     const size_t maxBufSize = 60;
 
     const std::string logDir("logDir");
-    const size_t fps = 30;
-    VideoCaptureSimu vcs(fps);
+
+    /* frame size 160x120 and frame rate 10 fps should be enough
+     * to empty buffer in one cycle
+     * check DEBUG output, if this is the case
+     */
+    const size_t fps = 10;
+    VideoCaptureSimu vcs(fps, "160x120");
+
+    /* number of logged frames = (buffer size - 1) + (stop - start - 1),
+     *                            frames in buffer      serial frames
+     * for low source frame rates that allow writing all buffer content
+     * during one cycle waiting for the next frame to read
+     *
+     * for higher source frame rates excess frames are written to file
+     * due to writing process not finished when new frame is read
+     *
+     * if buffer size == 1 -> one frame in buffer logged
+     */
 
     SECTION("preBufferSize below min") {
         const size_t bufSizeBelow = 0;
@@ -91,6 +109,8 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
 
         cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
+
+        /* for buffer size one -> one frame is logged */
         REQUIRE(frmCounts.size() == minBufSize);
 
     }
@@ -105,9 +125,8 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // number of logged frames = buffer size + 2
-        // as min buffer size is kept at 2 in saveMotionToDisk()
-        REQUIRE(frmCounts.size() == bufSizeInRange + 2);
+        /* bufferSize - 1 frames logged (if frame rate is sufficiently low) */
+        REQUIRE(frmCounts.size() == bufSizeInRange - 1);
     }
 
     SECTION("preBufferSize above max") {
@@ -120,15 +139,15 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // adjust buffer size to maxBufSize
-        REQUIRE(frmCounts.size() == maxBufSize + 2);
+        /* bufferSize - 1 frames logged (if frame rate is sufficiently low) */
+        REQUIRE(frmCounts.size() == maxBufSize - 1);
 
-        // frame count increases monotonic
+        /* frame count increases monotonic */
         for (size_t n = 1; n < frmCounts.size(); ++n) {
             REQUIRE((frmCounts[n] - frmCounts[n-1]) > 0);
         }
 
-        // frame rate matches specification and stays the same
+        /* frame rate matches specification and stays the same */
         std::vector<int> timeStamps = getBufferSamples(fs, "time stamp");
         double frameRatePrev = static_cast<double>(timeStamps[1] - timeStamps[0]);
         for (size_t n = 2; n < timeStamps.size(); ++n) {
@@ -139,10 +158,12 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
             frameRatePrev = frameRate;
         }
     }
-} // TEST_CASE "#mb001 constructor: buffer size"
 
 
-// fps verification: re-read written output video and get frame size
+} /* TEST_CASE "#mb001 constructor: buffer size" */
+
+
+/* fps verification: re-read written output video and get frame size */
 TEST_CASE("#mb002 constructor: fps", "[MotionBuffer]") {
     const double fpsMin = 1;
     const double fpsMax = 60;
@@ -150,42 +171,58 @@ TEST_CASE("#mb002 constructor: fps", "[MotionBuffer]") {
     const std::string logDir("logDir");
     const size_t bufferSize = 10;
     const size_t sourceFps = 30;
-    VideoCaptureSimu vcs(sourceFps);
+    VideoCaptureSimu vcs(sourceFps, "160x120");
     cv::VideoCapture cap;
 
     SECTION("fps below min") {
-        const double fpsBelowMin = 30;
+        const double fpsBelowMin = 0;
 
         MotionBuffer mb(bufferSize, fpsBelowMin, logDir);
-        const int startFrame = bufferSize + 10;
+        const int startFrame = bufferSize + 5;
         const int length = 10;
         std::string videoFile = writeToDiskTest(mb, vcs, startFrame, startFrame + length);
-        std::cout << "video file to analyze: " << videoFile << std::endl;
 
         cap.open(videoFile);
         REQUIRE(cap.isOpened());
         REQUIRE(cap.get(cv::CAP_PROP_FPS) == Approx(fpsMin).epsilon(0.01));
+        std::cout << "video file with " << cap.get(cv::CAP_PROP_FPS) << ": "
+                  << videoFile << std::endl;
     }
 
-    /*
+    SECTION("fps in range") {
+        const double fpsInRange = 0;
+
+        MotionBuffer mb(bufferSize, fpsInRange, logDir);
+        const int startFrame = bufferSize + 5;
+        const int length = 30;
+        std::string videoFile = writeToDiskTest(mb, vcs, startFrame, startFrame + length);
+
+        cap.open(videoFile);
+        REQUIRE(cap.isOpened());
+        REQUIRE(cap.get(cv::CAP_PROP_FPS) == Approx(fpsMin).epsilon(0.01));
+        std::cout << "video file with " << cap.get(cv::CAP_PROP_FPS) << ": "
+                  << videoFile << std::endl;
+    }
+
     SECTION("fps above max") {
         const double fpsAboveMax = 100;
 
         MotionBuffer mb(bufferSize, fpsAboveMax, logDir);
-        const int startFrame = bufferSize + 10;
-        const int length = 30;
+        const int startFrame = bufferSize + 5;
+        const int length = 60;
         std::string videoFile = writeToDiskTest(mb, vcs, startFrame, startFrame + length);
-        std::cout << "video file to analyze: " << videoFile << std::endl;
 
         cap.open(videoFile);
         REQUIRE(cap.isOpened());
         REQUIRE(cap.get(cv::CAP_PROP_FPS) == Approx(fpsMax).epsilon(0.01));
-
+        std::cout << "video file with " << cap.get(cv::CAP_PROP_FPS) << ": "
+                  << videoFile << std::endl;
     }
-    SECTION("fps in range") {
 
-    }
-    */
+    // TODO clean up logDir after executing tests
+
+
+
 }
 
 TEST_CASE("#mb002 save to disk", "[MotionBuffer]") {
@@ -196,4 +233,3 @@ TEST_CASE("#mb002 save to disk", "[MotionBuffer]") {
 }
 
 
-// clean up logDir after executing tests
