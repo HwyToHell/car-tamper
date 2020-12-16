@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
 
     const size_t bufSize = 3;
-    MotionBuffer mb(bufSize, readSourceFps, "video", "logDir");
+    MotionBuffer mb(bufSize, readSourceFps, "video", "log");
 
     const int startFrame = bufSize + 10;
     const int stopFrame = startFrame + 2;

@@ -79,7 +79,9 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
     const size_t minBufSize = 1;
     const size_t maxBufSize = 60;
 
-    const std::string logDir("logDir");
+    std::string cwd = cv::utils::fs::getcwd();
+    const std::string logDir("log");
+    const std::string videoDir("videos");
 
     /* frame size 160x120 and frame rate 10 fps should be enough
      * to empty buffer in one cycle
@@ -102,7 +104,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
     SECTION("preBufferSize below min") {
         const size_t bufSizeBelow = 0;
 
-        MotionBuffer mb(bufSizeBelow, fps, logDir);
+        MotionBuffer mb(bufSizeBelow, fps, videoDir, logDir);
         const int startFrame = minBufSize + 10;
         std::string videoFile = writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
@@ -118,7 +120,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
     SECTION("preBufferSize in range") {
         const size_t bufSizeInRange = 30;
 
-        MotionBuffer mb(bufSizeInRange, fps, logDir);
+        MotionBuffer mb(bufSizeInRange, fps,  videoDir, logDir);
         const int startFrame = bufSizeInRange + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
@@ -132,7 +134,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
     SECTION("preBufferSize above max") {
         const size_t bufSizeAbove = 100;
 
-        MotionBuffer mb(bufSizeAbove, fps, logDir);
+        MotionBuffer mb(bufSizeAbove, fps,  videoDir, logDir);
         const int startFrame = maxBufSize + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
@@ -149,21 +151,23 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
 
         /* frame rate matches specification and stays the same */
         std::vector<int> timeStamps = getBufferSamples(fs, "time stamp");
-        double frameRatePrev = static_cast<double>(timeStamps[1] - timeStamps[0]);
+        double frameTimePrev = static_cast<double>(timeStamps[1] - timeStamps[0]);
         for (size_t n = 2; n < timeStamps.size(); ++n) {
-            double frameRate = static_cast<double>(timeStamps[n] - timeStamps[n-1]);
-            REQUIRE(frameRate == Approx(1000 / fps).epsilon(0.1));
-            std::cout << "frame rate: " << frameRate << std::endl;
-            REQUIRE(frameRatePrev == Approx(frameRate).epsilon(0.1));
-            frameRatePrev = frameRate;
+            double frameTime = static_cast<double>(timeStamps[n] - timeStamps[n-1]);
+            REQUIRE(frameTime == Approx(1000 / fps).epsilon(0.1));
+            std::cout << "frame rate: " << frameTime << std::endl;
+            REQUIRE(frameTimePrev == Approx(frameTime).epsilon(0.1));
+            frameTimePrev = frameTime;
         }
     }
 
-
+    //cv::utils::fs::remove_all(cwd + "/" + videoDir);
 } /* TEST_CASE "#mb001 constructor: buffer size" */
 
 
-/* fps verification: re-read written output video and get frame size */
+/*
+
+// fps verification: re-read written output video and get frame size
 TEST_CASE("#mb002 constructor: fps", "[MotionBuffer]") {
     const double fpsMin = 1;
     const double fpsMax = 60;
@@ -220,10 +224,9 @@ TEST_CASE("#mb002 constructor: fps", "[MotionBuffer]") {
     }
 
     // TODO clean up logDir after executing tests
-
-
-
 }
+
+*/
 
 TEST_CASE("#mb002 save to disk", "[MotionBuffer]") {
 

@@ -49,9 +49,9 @@ private:
 class MotionBuffer
 {
 public:
-    MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string videoDir = "videos");
-    MotionBuffer(std::size_t preBufferSize, double fpsOutput, std::string videoDir = "videos",
-                 std::string logDirForTest = "log");
+    MotionBuffer(std::size_t preBufferSize, double fpsOutput,
+                 std::string videoDir       = "videos",
+                 std::string logDirForTest  = "log");
     ~MotionBuffer();
     std::string getLogFileRelPath();
     std::string getVideoFileName();
@@ -61,7 +61,7 @@ public:
     void        resetNewMotionFile();
     void        setSaveToDisk(bool value);
     bool        setVideoDir(std::string subDir);
-    std::string waitForMotionFile();
+    std::string waitForVideoFile();
 private:
     void                    saveMotionToDisk();
     bool                    m_setSaveToDisk;
@@ -78,7 +78,6 @@ private:
     /* logger for frame count and timinge, used in unit test,
      * enable with #define UNIT_TEST */
     LogFrame                m_logAtTest;
-    std::string             m_motionFileName;
     std::mutex              m_mtxBufferAccess;
     std::mutex              m_mtxNewFileNotice;
     /* preBufferSize must be at least 1 for saveToDisk algo to work
@@ -86,8 +85,8 @@ private:
     std::size_t             m_preBufferSize;
     bool                    m_terminate;
     std::thread             m_threadSaveToDisk;
-    std::string             m_videoDirAbs;
-    std::string             m_videoFilePath;
+    std::string             m_videoSubDir;
+    std::string             m_videoFileName;
 };
 
 
