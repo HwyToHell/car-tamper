@@ -2,7 +2,7 @@
 #include "../inc/backgroundsubtraction.h"
 #include "../inc/motionbuffer.h"
 #include "../inc/time-stamp.h"
-#include "../car-tamper-test/inc/video-capture-simu.h"
+#include "../inc/video-capture-simu.h"
 
 // opencv
 #include <opencv2/opencv.hpp>

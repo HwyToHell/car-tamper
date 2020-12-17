@@ -1,3 +1,5 @@
+#ifndef BACKGROUNDSUBTRACTION_H
+#define BACKGROUNDSUBTRACTION_H
 #include <opencv2/opencv.hpp>
 
 /// background subtractor: first order low pass filter
@@ -15,3 +17,5 @@ private:
 };
 
 cv::Ptr<BackgroundSubtractorLowPass> createBackgroundSubtractorLowPass(double alpha, double threshold);
+
+#endif // BACKGROUNDSUBTRACTION_H

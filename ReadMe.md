@@ -8,7 +8,7 @@ RSpec: requirements
 - car-tamper-test
    cartaper-test.pro: qt creator project for unit testing
    - src
-      main-test-cases:		test runner using catch.org
+      main-test-cases:		
       motion-buffer-test: 	test cases
 	  vid-cap-simu-test: 	test cases for video-capture-simu
       video-capture-simu: 	cv::VideoCapture compatible simulator
@@ -25,41 +25,39 @@ RSpec: requirements
 	motionbuffer.cpp:		ring buffer class with saveToDisk capability
 	save-main: 				test motion detection in separate thread
 
-- __car\-tamper__
-   - [FSpec \- Car Tamper.odt]	feature spec with implementaion details
-   - RSpec \- Car Tamper.odt  requirements
+- __tamper__
    - [ReadMe.md](ReadMe.md)
    - [ToDo.md](ToDo.md)
-   - __car\-tamper\-test__
-     - [car\-tamper\-test.pro](car-tamper-test/car-tamper-test.pro)
-     - [car\-tamper\-test.pro.user](car-tamper-test/car-tamper-test.pro.user)
-     - __inc__
-       - [video\-capture\-simu.h](car-tamper-test/inc/video-capture-simu.h)
-     - __src__
-       - [main\-test\-cases.cpp](car-tamper-test/src/main-test-cases.cpp)
-       - [motionbuffer\-test.cpp](car-tamper-test/src/motionbuffer-test.cpp)
-       - [vid\-cap\-simu\-test.cpp](car-tamper-test/src/vid-cap-simu-test.cpp)
-       - [video\-capture\-simu.cpp](car-tamper-test/src/video-capture-simu.cpp)
-     - [test\-cases.ods](car-tamper-test/test-cases.ods)
    - __inc__
      - [backgroundsubtraction.h](inc/backgroundsubtraction.h)
      - [motionbuffer.h](inc/motionbuffer.h)
      - [time\-stamp.h](inc/time-stamp.h)
-   - __qtcr\-car\-tamper__
-     - [qtcr\-car\-tamper.pro](qtcr-car-tamper/qtcr-car-tamper.pro)
-     - [qtcr\-car\-tamper.pro.user](qtcr-car-tamper/qtcr-car-tamper.pro.user)
+     - [video\-capture\-simu.h](inc/video-capture-simu.h)
+   - __spec__
+     - [FSpec \- Car Tamper.odt](spec/FSpec%20-%20Car%20Tamper.odt)
+     - [RSpec \- Car Tamper.odt](spec/RSpec%20-%20Car%20Tamper.odt)
    - __src__
-     - [backgroundsubtraction.cpp](src/backgroundsubtraction.cpp)
-     - [main\-cap.cpp](src/main-cap.cpp)
-     - [main\-clock.cpp](src/main-clock.cpp)
-     - [main\-mat.cpp](src/main-mat.cpp)
-     - [main\-qt\-file\-picker.cpp](src/main-qt-file-picker.cpp)
-     - [main\-read\-json.cpp](src/main-read-json.cpp)
-     - [main\-read.cpp](src/main-read.cpp)
-     - [main\-verify\-write.cpp](src/main-verify-write.cpp)
-     - [main\-write.cpp](src/main-write.cpp)
-     - [motionbuffer\-bak01.cpp](src/motionbuffer-bak01.cpp)
-     - [motionbuffer.cpp](src/motionbuffer.cpp)
-     - [save\-main.cpp](src/save-main.cpp)
-     - [time\-stamp.cpp](src/time-stamp.cpp)
+     - [backgroundsubtraction.cpp](src/backgroundsubtraction.cpp)		 	class backgroundsubtraction
+     - [main\-write\-to\-disk.cpp](src/main-write-to-disk.cpp)				test write to disk functionality
+     - [motionbuffer.cpp](src/motionbuffer.cpp)								class ringbuffer with saveToDisk capability
+     - [time\-stamp.cpp](src/time-stamp.cpp)								functions for time stamp generation
+     - [video\-capture\-simu.cpp](src/video-capture-simu.cpp)				class for compatible cv::VideoCapture simulation
+     - __wip__																mains for testing purposes
+       - [main\-cap\-get\-set.cpp](src/wip/main-cap-get-set.cpp)			test cv::VideoWriter and cv::VideoCapture get & set
+       - [main\-cap.cpp](src/wip/main-cap.cpp)								test video capture loop
+       - [main\-clock.cpp](src/wip/main-clock.cpp)							test std::chrono
+       - [main\-mat.cpp](src/wip/main-mat.cpp)								test cv::Mat	
+       - [main\-qt\-file\-picker.cpp](src/wip/main-qt-file-picker.cpp)		test video capture from file (qt file picker)
+       - [main\-read\-json.cpp](src/wip/main-read-json.cpp)					test cv::FileNode by reading json file
+       - [main\-read.cpp](src/wip/main-read.cpp)							test video capture from file (cmd line arg)
+       - [main\-verify\-write.cpp](src/wip/main-verify-write.cpp)			test writing frames to disk
+   - [tamper.pro](tamper.pro)
+   - [tamper.pro.user](tamper.pro.user)
+   - __test__																test cases
+     - [main\-test\-cases.cpp](test/main-test-cases.cpp)					test runner using catch.org
+     - [motionbuffer\-test.cpp](test/motionbuffer-test.cpp)					test cases motionbuffer
+     - [test\-cases.ods](test/test-cases.ods)								test case description
+     - [test\-tamper.pro](test/test-tamper.pro)								qtcr project for unit testing
+     - [test\-tamper.pro.user](test/test-tamper.pro.user)
+     - [vid\-cap\-simu\-test.cpp](test/vid-cap-simu-test.cpp)				test cases video-capture-simu
 
