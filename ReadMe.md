@@ -3,27 +3,8 @@
 
 ### detect motion on webcam video stream and
 ### save video sequences to disk
-FSpec: feature spec with implementaion details
-RSpec: requirements
-- car-tamper-test
-   cartaper-test.pro: qt creator project for unit testing
-   - src
-      main-test-cases:		
-      motion-buffer-test: 	test cases
-	  vid-cap-simu-test: 	test cases for video-capture-simu
-      video-capture-simu: 	cv::VideoCapture compatible simulator
-- inc
-- src
-  	main-cap:				test video capture loop
-	main-clock:				test std::chrono
-	main-mat:				test cv::Mat
-	main-qt-file-picker:	test video capture from file (qt file picker)
-	main-read: 				test video capture from file (cmd line arg)
-	main-read-json:			test cv::FileNode by reading json file
-	main-verify-write:		test writing frames to disk
-	main-cap-get-set:		test cv::VideoWriter and cv::VideoCapture get & set
-	motionbuffer.cpp:		ring buffer class with saveToDisk capability
-	save-main: 				test motion detection in separate thread
+
+- project structure
 
 - __tamper__
    - [ReadMe.md](ReadMe.md)
@@ -34,8 +15,8 @@ RSpec: requirements
      - [time\-stamp.h](inc/time-stamp.h)
      - [video\-capture\-simu.h](inc/video-capture-simu.h)
    - __spec__
-     - [FSpec \- Car Tamper.odt](spec/FSpec%20-%20Car%20Tamper.odt)
-     - [RSpec \- Car Tamper.odt](spec/RSpec%20-%20Car%20Tamper.odt)
+     - [FSpec \- Car Tamper.odt](spec/FSpec%20-%20Car%20Tamper.odt)			feature spec with implementaion details
+     - [RSpec \- Car Tamper.odt](spec/RSpec%20-%20Car%20Tamper.odt)			requirements
    - __src__
      - [backgroundsubtraction.cpp](src/backgroundsubtraction.cpp)		 	class backgroundsubtraction
      - [main\-write\-to\-disk.cpp](src/main-write-to-disk.cpp)				test write to disk functionality

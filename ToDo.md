@@ -10,10 +10,10 @@ motionbuffer module
 
 [2020-12-06]
 - bakground subtraction
-- finish motion buffer: configure output directory and file name
+- OK: finish motion buffer: configure output directory and file name
 
 
-- change dir structure to
+- OK: change dir structure to
 	inc
 	src
 	test (from car-tamper-test)
@@ -26,13 +26,12 @@ motionbuffer module
 		module-name-test.cpp
 		test-cases.ods
 		test.pro
-- rename test project "car-tamper-test" -> "test-car-tamper"
+- OK: rename test project "car-tamper-test" -> "test-car-tamper"
   easier to recognize when opening project with qt-creator
-- optional: delete dir qtcr-car-tamper and move qtcr-car-tamper.pro up one level
-- optional: create dir wip for the main-xxx files
-- motionbuffer.cpp: rename activateSaveToDisk -> setSaveToDisk
-  saveToDisk can be set and reset with this method
-  activate implies just setting -> the boolean input could be forgotten
+- OK: optional: delete dir qtcr-car-tamper and move qtcr-car-tamper.pro up one level
+- OK: optional: create dir wip for the main-xxx files
+- OK: motionbuffer.cpp: rename activateSaveToDisk -> setSaveToDisk
+
 
 
 
