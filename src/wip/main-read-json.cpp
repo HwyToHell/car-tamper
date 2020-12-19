@@ -64,7 +64,7 @@ int main_read_Json(int argc, char *argv[]) {
     cout << file << endl;
 
     cv::FileStorage fs;
-    fs.open(file, cv::FileStorage::Mode::READ);
+    fs.open(file, cv::FileStorage::Mode::read);
     if (!fs.isOpened()) {
         cout << "file storage not open"<< endl;
         return -1;

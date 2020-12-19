@@ -109,7 +109,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         std::string videoFile = writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
 
-        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
+        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::read);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         /* for buffer size one -> one frame is logged */
@@ -124,7 +124,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         const int startFrame = bufSizeInRange + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
-        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
+        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::read);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         /* bufferSize - 1 frames logged (if frame rate is sufficiently low) */
@@ -138,7 +138,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         const int startFrame = maxBufSize + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
-        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
+        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::read);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         /* bufferSize - 1 frames logged (if frame rate is sufficiently low) */

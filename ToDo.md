@@ -2,6 +2,14 @@
 -----------------------
 
 ### TODO
+
+[2020-12-19]
+- test motionbuffer in combination with motion-detector 
+- motion-detector get / set
+- OK: video-capture-simu: implement motion simulation
+  with number of motion pixels as parameter
+
+
 [2020-12-10]
 motionbuffer module
 - get log file name
@@ -9,7 +17,7 @@ motionbuffer module
 
 
 [2020-12-06]
-- bakground subtraction
+- background subtraction
 - OK: finish motion buffer: configure output directory and file name
 
 

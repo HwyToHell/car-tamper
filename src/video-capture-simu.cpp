@@ -13,11 +13,13 @@ VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond, std::string videoSize
         {"320x240", cv::Size(320,240)},
         {"640x480", cv::Size(640,480)},
         {"1024x768", cv::Size(1024,768)},
+        {"1280x720", cv::Size(1280,720)},
         {"1920x1080", cv::Size(1920,1080)}
     },
     m_cntFrame{0},
     m_fps{framesPerSecond},
     m_frameSize{m_availVideoSizes.find("640x480")->second},
+    m_genMode{GenMode::timeStamp},
     m_isLogging{false},
     m_isNewFrame{false},
     m_isReleased{false}
@@ -28,7 +30,8 @@ VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond, std::string videoSize
 }
 
 
-VideoCaptureSimu::~VideoCaptureSimu() {
+VideoCaptureSimu::~VideoCaptureSimu()
+{
     release();
     if (m_thread.joinable()) {
         m_thread.join();
@@ -37,17 +40,55 @@ VideoCaptureSimu::~VideoCaptureSimu() {
 }
 
 /*
- * return synthetic frame with time stamp in ms
+ * return synthetic black frame
  */
-cv::Mat frameTimeStamp(cv::Size frameSize) {
-    const cv::Scalar black  = cv::Scalar(0,0,0);
-    const cv::Scalar red    = cv::Scalar(0,0,255);
+cv::Mat createBlackFrame(cv::Size frameSize)
+{
+    const cv::Vec3b black  = cv::Vec3b(0,0,0);
     cv::Mat frame(frameSize, CV_8UC3, black);
-    std::string timeStamp = getTimeStamp(TimeResolution::ms);
-    cv::putText(frame, timeStamp, cv::Point(10,50),
-                cv::FONT_HERSHEY_SIMPLEX, 1, red, 2);
     return frame;
 }
+
+/*
+ * put time stamp with ms granularity on frame
+ * format: yyyy-mm-dd_hh-mm-ss.ms
+ */
+void putTimeStamp(cv::Mat& frame)
+{
+    const cv::Vec3b red    = cv::Vec3b(0,0,255);
+    const int thickness     = 1;
+
+    std::string timeStamp = getTimeStamp(TimeResolution::ms);
+    double fontScale = frame.size().width / 600.;
+    int basLn;
+    cv::Size textSize = cv::getTextSize(timeStamp, cv::FONT_HERSHEY_SIMPLEX,
+                                        fontScale, thickness, &basLn);
+    cv::Point textOrg(frame.size().width / 100,
+                      frame.size().height / 50 + textSize.height);
+    cv::putText(frame, timeStamp, textOrg, cv::FONT_HERSHEY_SIMPLEX, fontScale,
+                red, thickness);
+}
+
+/*
+ * put parametrizable motion area on black frame
+ *********************************************************
+ *                                   *  <- motionArea -> *
+ *********************************************************
+ */
+void putMotionArea(cv::Mat& frame, int area, int greyLevel)
+{
+    // keep height, adjust width to fit area
+    int widthMotionArea  = frame.size().width * area / 100;
+    int xOrgAdj = frame.size().width - widthMotionArea -1;
+    cv::Rect motionRect(xOrgAdj, 0, widthMotionArea, frame.size().height);
+
+    // grey level -> color channel intensity (uchar)
+    unsigned char chIntensity = static_cast<unsigned char>(255 * greyLevel / 100);
+    cv::Vec3b greyShade = cv::Vec3b(chIntensity, chIntensity, chIntensity);
+
+    cv::rectangle(frame, motionRect, greyShade, cv::FILLED, cv::LINE_4);
+}
+
 
 
 /*
@@ -56,7 +97,8 @@ cv::Mat frameTimeStamp(cv::Size frameSize) {
  * and time stamp (ms) as int in pixel(0,height)
  * main thread notified after new frame available
  */
-void VideoCaptureSimu::generateFrame() {
+void VideoCaptureSimu::generateFrame()
+{
     auto durationPerFrame = std::chrono::milliseconds(1000 / m_fps);
     if (m_isLogging) {
         std::cout << "frame duration: " << durationPerFrame.count() << std::endl;
@@ -67,7 +109,21 @@ void VideoCaptureSimu::generateFrame() {
     while (!m_isReleased) {
         {
             std::lock_guard<std::mutex> newFrameLock(m_mtxNewFrame);
-            m_sourceFrame = frameTimeStamp(m_frameSize);
+            switch (m_genMode) {
+            case GenMode::timeStamp:
+                m_sourceFrame = createBlackFrame(m_frameSize);
+                putTimeStamp(m_sourceFrame);
+                break;
+            case GenMode::motionArea:
+                m_sourceFrame = createBlackFrame(m_frameSize);
+                putMotionArea(m_sourceFrame, m_motionArea, m_motionGreyLevel);
+                break;
+            case GenMode::timeAndMotionArea:
+                m_sourceFrame = createBlackFrame(m_frameSize);
+                putMotionArea(m_sourceFrame, m_motionArea, m_motionGreyLevel);
+                putTimeStamp(m_sourceFrame);
+            }
+
             durationPerFrame = std::chrono::milliseconds(1000 / m_fps);
 
             // encode frame count as int in first pixel
@@ -99,14 +155,14 @@ void VideoCaptureSimu::generateFrame() {
             }
         }
     }
-
 }
 
 
 /*
  * read capture properties in same format as cv::VideoCapture
  */
-double VideoCaptureSimu::get(int propid) {
+double VideoCaptureSimu::get(int propid)
+{
     switch (propid) {
     case cv::CAP_PROP_FPS:
         return m_fps;
@@ -120,12 +176,14 @@ double VideoCaptureSimu::get(int propid) {
 }
 
 
-int VideoCaptureSimu::getFrameCount() {
+int VideoCaptureSimu::getFrameCount()
+{
     return m_cntFrame;
 }
 
 
-bool VideoCaptureSimu::read(cv::Mat& frame) {
+bool VideoCaptureSimu::read(cv::Mat& frame)
+{
     std::unique_lock<std::mutex> newFrameLock(m_mtxNewFrame);
     m_cndNewFrame.wait(newFrameLock, [this]{return m_isNewFrame;} );
     m_sourceFrame.copyTo(frame);
@@ -137,7 +195,8 @@ bool VideoCaptureSimu::read(cv::Mat& frame) {
 }
 
 
-void VideoCaptureSimu::release() {
+void VideoCaptureSimu::release()
+{
     {
         std::lock_guard<std::mutex> lock(m_mtxStop);
         m_isReleased = true;
@@ -146,7 +205,8 @@ void VideoCaptureSimu::release() {
 }
 
 
-bool VideoCaptureSimu::selectVideoSize(std::string videoSize) {
+bool VideoCaptureSimu::selectVideoSize(std::string videoSize)
+{
     for (std::pair<std::string, cv::Size> elem : m_availVideoSizes) {
         if (elem.first.find(videoSize) != std::string::npos) {
             m_frameSize = elem.second;
@@ -162,7 +222,8 @@ bool VideoCaptureSimu::selectVideoSize(std::string videoSize) {
 /*
  * write capture properties in same format as cv::VideoCapture
  */
-bool VideoCaptureSimu::set(int propid, double value) {
+bool VideoCaptureSimu::set(int propid, double value)
+{
     switch (propid) {
         case cv::CAP_PROP_FPS: {
             const size_t fpsMax = 60;
@@ -196,4 +257,28 @@ bool VideoCaptureSimu::set(int propid, double value) {
         default:
             return false;
     }
+}
+
+
+/*
+ * area in per cent: 0 ... 100
+ * grey level in per cent: 0 ... 100
+ * with time stamp: default = false
+ */
+bool VideoCaptureSimu::setMotionMode(int area, int greyLevel, bool withTime)
+{
+    // boundary validation of input
+    area = area > 100 ? 100 : area;
+    area = area < 0 ? 0 : area;
+    greyLevel = greyLevel > 100 ? 100 : greyLevel;
+    greyLevel = greyLevel < 0 ? 0 : greyLevel;
+
+    if (withTime)
+        m_genMode = GenMode::timeAndMotionArea;
+    else
+        m_genMode = GenMode::motionArea;
+    m_motionArea = area;
+    m_motionGreyLevel = greyLevel;
+
+    return true;
 }
