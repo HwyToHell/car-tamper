@@ -20,22 +20,11 @@
 
 
 
-// test MotionBuffer saveToDisk by using video capture simulation
-int main_detect_motion(int argc, char *argv[]) {
+// test MotionBuffer saveToDisk by analyzing video file
+int main(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
 
-    /* test cv::rectangle
-    const cv::Vec3b black  = cv::Vec3b(0,0,0);
-    const cv::Size frameSize(640,480);
-    cv::Mat frame(frameSize, CV_8UC3, black);
-    cv::Rect motionRect(0,0,100,frameSize.width);
-    cv::Vec3b greyShade = cv::Vec3b(0, 128, 128);
-    cv::rectangle(frame, motionRect, greyShade, cv::FILLED, cv::LINE_4);
-    cv::imshow("video", frame);
-    cv::waitKey(0);
-    return 0;
-    */
 
     const size_t sourceFps = 30;
     VideoCaptureSimu cap(sourceFps, "640x480");

@@ -18,7 +18,8 @@
      - [RSpec \- Car Tamper.odt](spec/RSpec%20-%20Car%20Tamper.odt)			requirements
    - __src__
      - [backgroundsubtraction.cpp](src/backgroundsubtraction.cpp)		 	class backgroundsubtraction
-     - [main\-detect\-motion.cpp](src/main-detect-motion.cpp)				test motion detection functionality
+     - [main\-analyze\-video.cpp](src/main-analyze-video.cpp)				test motion detection by analyzing video file
+     - [main\-detect\-motion.cpp](src/main-detect-motion.cpp)				test motion detection by using video capture simu
      - [main\-write\-to\-disk.cpp](src/main-write-to-disk.cpp)				test write to disk functionality
      - [motion\-detector.cpp](src/motion-detector.cpp)						class for motion detection
      - [motionbuffer.cpp](src/motionbuffer.cpp)								class ringbuffer with saveToDisk capability

@@ -10,7 +10,7 @@ MotionDetector::MotionDetector() :
 }
 
 
-bool MotionDetector::enableSaveToDisk(MotionBuffer buffer)
+bool MotionDetector::enableSaveToDisk(MotionBuffer& buffer)
 {
     if (m_motionDuration >= m_minMotionDuration
             && !buffer.isSaveToDiskRunning()) {
@@ -23,16 +23,56 @@ bool MotionDetector::enableSaveToDisk(MotionBuffer buffer)
 }
 
 
+int MotionDetector::get(MotionMinimal parameter)
+{
+    int value = 0;
+    switch (parameter) {
+    case MotionMinimal::intensity:
+        value = m_minMotionIntensitiy;
+        break;
+    case MotionMinimal::duration:
+        value = m_minMotionDuration;
+        break;
+    }
+    return value;
+}
+
+
+cv::Mat MotionDetector::getMotionFrame()
+{
+    return m_motionMask;
+}
+
+
 bool MotionDetector::hasFrameMotion(cv::Mat frame)
 {
-    cv::Mat postFrame;
-    cv::blur(frame, postFrame, cv::Size(10,10));
+    // pre-processing
+    cv::Mat processedFrame;
+    cv::blur(frame, processedFrame, cv::Size(10,10));
 
     // detect motion in current frame
-    cv::Mat motionMask;
-    m_bgrSub->apply(postFrame, motionMask);
-    int motionIntensity = cv::countNonZero(motionMask);
+    m_bgrSub->apply(processedFrame, m_motionMask);
+    int motionIntensity = cv::countNonZero(m_motionMask);
     return motionIntensity > m_minMotionIntensitiy ? true : false;
+}
+
+
+bool MotionDetector::set(MotionMinimal parameter, int value)
+{
+    // boundary validation of input 0 ... 100
+    value = value > 100 ? 100 : value;
+    value = value < 0 ? 0 : value;
+
+    switch (parameter) {
+    case MotionMinimal::intensity:
+        m_minMotionIntensitiy = value;
+        break;
+    case MotionMinimal::duration:
+        m_minMotionDuration = value;
+        break;
+    }
+
+    return true;
 }
 
 

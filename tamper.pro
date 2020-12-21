@@ -24,6 +24,7 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
+    src/main-analyze-video.cpp \
     src/main-detect-motion.cpp \
     src/main-write-to-disk.cpp \
     src/motion-detector.cpp \

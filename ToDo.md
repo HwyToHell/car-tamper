@@ -2,10 +2,11 @@
 -----------------------
 
 ### TODO
-
+[2020-12-20]
+- test buffer and detector with video
 [2020-12-19]
-- test motionbuffer in combination with motion-detector 
-- motion-detector get / set
+- OK: test motionbuffer in combination with motion-detector 
+- motion-detector get / set foreRun, overRun
 - OK: video-capture-simu: implement motion simulation
   with number of motion pixels as parameter
 

@@ -10,7 +10,7 @@
 #include <string>
 #include <thread>
 
-enum class GenMode {timeStamp, motionArea, timeAndMotionArea};
+enum class GenMode {black, timeStamp, motionArea, motionAreaAndTime};
 
 
 class VideoCaptureSimu
@@ -22,7 +22,7 @@ public:
     int         getFrameCount();
     bool        read(cv::Mat& frame);
     bool        set(int propid, double value);
-    bool        setMotionMode(int area, int greyLevel, bool withTime = false);
+    bool        setMode(GenMode mode, int area = 0, int greyLevel = 0);
     bool        setTimeStampMode();
     void        release();
 private:

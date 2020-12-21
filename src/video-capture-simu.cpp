@@ -110,6 +110,9 @@ void VideoCaptureSimu::generateFrame()
         {
             std::lock_guard<std::mutex> newFrameLock(m_mtxNewFrame);
             switch (m_genMode) {
+            case GenMode::black:
+                m_sourceFrame = createBlackFrame(m_frameSize);
+                break;
             case GenMode::timeStamp:
                 m_sourceFrame = createBlackFrame(m_frameSize);
                 putTimeStamp(m_sourceFrame);
@@ -118,7 +121,7 @@ void VideoCaptureSimu::generateFrame()
                 m_sourceFrame = createBlackFrame(m_frameSize);
                 putMotionArea(m_sourceFrame, m_motionArea, m_motionGreyLevel);
                 break;
-            case GenMode::timeAndMotionArea:
+            case GenMode::motionAreaAndTime:
                 m_sourceFrame = createBlackFrame(m_frameSize);
                 putMotionArea(m_sourceFrame, m_motionArea, m_motionGreyLevel);
                 putTimeStamp(m_sourceFrame);
@@ -261,11 +264,11 @@ bool VideoCaptureSimu::set(int propid, double value)
 
 
 /*
- * area in per cent: 0 ... 100
- * grey level in per cent: 0 ... 100
- * with time stamp: default = false
+ * generation mode: enum
+ * area in per cent: 0 ... 100,         default = 0
+ * grey level in per cent: 0 ... 100,   default = 0
  */
-bool VideoCaptureSimu::setMotionMode(int area, int greyLevel, bool withTime)
+bool VideoCaptureSimu::setMode(GenMode mode, int area, int greyLevel)
 {
     // boundary validation of input
     area = area > 100 ? 100 : area;
@@ -273,12 +276,10 @@ bool VideoCaptureSimu::setMotionMode(int area, int greyLevel, bool withTime)
     greyLevel = greyLevel > 100 ? 100 : greyLevel;
     greyLevel = greyLevel < 0 ? 0 : greyLevel;
 
-    if (withTime)
-        m_genMode = GenMode::timeAndMotionArea;
-    else
-        m_genMode = GenMode::motionArea;
     m_motionArea = area;
     m_motionGreyLevel = greyLevel;
+
+    m_genMode = mode;
 
     return true;
 }
