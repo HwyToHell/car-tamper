@@ -6,6 +6,9 @@ QT += core gui widgets
 CONFIG += c++14 console
 CONFIG -= app_bundle
 
+DEFINES -= DEBUG_BUILD
+DEFINES -= LOG_AT_TEST
+
 LIBS += -lopencv_core \
         -lopencv_imgcodecs \
         -lopencv_imgproc \

@@ -11,7 +11,6 @@
 #include <string>
 #include <thread>
 
-#define DEBUG_BUILD
 
 #ifdef DEBUG_BUILD
     #define DEBUG(x) do { std::cerr << x << std::endl; } while (0)

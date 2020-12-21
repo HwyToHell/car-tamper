@@ -1,8 +1,12 @@
 # Car Tamper Application
 -----------------------
-
+ 
 ### detect motion on webcam video stream and
 ### save video sequences to disk
+
+- __qmake DEFINES__ 
+- DEBUG_BUILD enables debug messages to console
+- LOG_AT_TEST log video-capture-simu encoded information about frame timing
 
 - project structure
 

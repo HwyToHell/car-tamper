@@ -1,7 +1,6 @@
 #include "../inc/motionbuffer.h"
 #include "../inc/time-stamp.h"
 
-#define UNIT_TEST
 
 
 /* LogFrame ******************************************************************/
@@ -259,7 +258,7 @@ void MotionBuffer::saveMotionToDisk() {
                 m_terminate = true;
                 break;
             }
-            #ifdef UNIT_TEST
+            #ifdef LOG_AT_TEST
             m_logAtTest.create(getTimeStamp(TimeResolution::ms_NoBlank) + ".json");
             #endif
             DEBUG(getTimeStampMs() << " video file created");
@@ -280,7 +279,7 @@ void MotionBuffer::saveMotionToDisk() {
             DEBUG(getTimeStampMs() << " last frame copied");
 
             videoWriter.write(lastFrame);
-            #ifdef UNIT_TEST
+            #ifdef LOG_AT_TEST
             m_logAtTest.write(lastFrame);
             #endif
             DEBUG(getTimeStampMs() << " last frame written");
@@ -296,7 +295,7 @@ void MotionBuffer::saveMotionToDisk() {
             m_isSaveToDiskRunning = false;
             DEBUG(getTimeStampMs() << " releasing videoWriter ...");
             videoWriter.release();
-            #ifdef UNIT_TEST
+            #ifdef LOG_AT_TEST
             m_logAtTest.close();
             #endif
             DEBUG(getTimeStampMs() << " videoWriter released");
