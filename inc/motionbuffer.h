@@ -39,6 +39,7 @@ private:
 };
 
 
+
 /*
  * stores frames in ring buffer
  * after saveToDisk mode has been enabled:
@@ -58,11 +59,22 @@ public:
     void        pushToBuffer(cv::Mat& frame);
     void        releaseBuffer();
     void        resetNewMotionFile();
+    void        setFpsOutput(double fps);
+    void        setPostBuffer(std::size_t nFrames);
+    void        setPreBuffer(std::size_t nFrames);
     void        setSaveToDisk(bool value);
     bool        setVideoDir(std::string subDir);
+    enum        State {
+                    noMotion,
+                    createVideoFile,
+                    writeActiveMotion,
+                    writePostBuffer
+                };
     std::string waitForVideoFile();
 private:
     void                    saveMotionToDisk();
+    void                    writeUntilBufferEmpty(cv::VideoWriter& vidWriter);
+    bool                    postBufferFinished(cv::VideoWriter& vidWriter);
     bool                    m_setSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
@@ -79,9 +91,13 @@ private:
     LogFrame                m_logAtTest;
     std::mutex              m_mtxBufferAccess;
     std::mutex              m_mtxNewFileNotice;
+    /* number of frames written after saveToDisk has been disabled */
+    std::size_t             m_postBufferSize;
     /* preBufferSize must be at least 1 for saveToDisk algo to work
      * and is limited to 60 in order to avoid heap memory shortage */
     std::size_t             m_preBufferSize;
+    std::size_t             m_remainingPostFrames;
+    State                   m_saveToDiskState;
     bool                    m_terminate;
     std::thread             m_threadSaveToDisk;
     std::string             m_videoSubDir;

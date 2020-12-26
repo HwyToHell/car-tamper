@@ -59,7 +59,8 @@ int main(int argc, char *argv[]) {
         mdet.updateMotionDuration(isMotion);
         mdet.enableSaveToDisk(mb);
 
-        cv::imshow("video", frame);
+        /*
+         * cv::imshow("video", frame);
         cv::imshow("motion", mdet.getMotionFrame());
 
 
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
             cout << "esc -> end video processing" << endl;
             break;
         }
+        */
 
         /*
         double currentFrame = cap.get(cv::CAP_PROP_POS_FRAMES);
@@ -76,9 +78,8 @@ int main(int argc, char *argv[]) {
         }
         */
     }
-
     cap.release();
     cout << endl;
-    cout << "finished" << endl;
+    cout << "reading video file finished and video capture released" << endl;
     return 0;
 }
