@@ -15,6 +15,7 @@
 #include <QString>
 
 // std
+#include <chrono>
 #include <iostream>
 #include <string>
 
@@ -31,6 +32,7 @@ int main(int argc, char *argv[]) {
         "Video files (*.avi *.mp4)" );
     std::string file(videoFile.toUtf8());
 
+    auto start = chrono::system_clock::now();
 
     cv::VideoCapture cap(file, cv::CAP_FFMPEG);
     if (!cap.isOpened()) {
@@ -59,27 +61,31 @@ int main(int argc, char *argv[]) {
         mdet.updateMotionDuration(isMotion);
         mdet.enableSaveToDisk(mb);
 
-        /*
-         * cv::imshow("video", frame);
+
+        cv::imshow("video", frame);
         cv::imshow("motion", mdet.getMotionFrame());
-
-
         if (cv::waitKey(1) == 27) {
             cout << "esc -> end video processing" << endl;
             break;
         }
-        */
 
-        /*
+
+
         double currentFrame = cap.get(cv::CAP_PROP_POS_FRAMES);
         double progress = std::floor(currentFrame / sumFrames * 100);
         if (cnt % 30 == 0) {
-            cout << progress << "%" << endl;
+            cout << progress << "%\r";
+            cout.flush();
         }
-        */
+
     }
     cap.release();
     cout << endl;
     cout << "reading video file finished and video capture released" << endl;
+
+    auto stop = chrono::system_clock::now();
+    auto elapsedSec = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    cout << "video analysis took " << elapsedSec.count() << " seconds" << endl << endl;
+
     return 0;
 }

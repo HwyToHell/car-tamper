@@ -198,8 +198,6 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame)
         saveToDiskRunning = m_isSaveToDiskRunning;
         setSaveToDisk = m_setSaveToDisk;
     }
-    DEBUG(getTimeStampMs() << " frame pushed, buf size: " << m_buffer.size()
-          << ", s2dRunning: " << saveToDiskRunning << ", setS2D: " << setSaveToDisk);
 
     if (saveToDiskRunning) {
         /* lock guard needed because of deque size change */

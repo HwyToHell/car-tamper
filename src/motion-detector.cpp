@@ -5,7 +5,8 @@ MotionDetector::MotionDetector() :
     m_minMotionDuration{10},    // number of consecutive frames with motion
     m_minMotionIntensitiy{100}  // number of pixels with motion
 {
-    m_bgrSub = createBackgroundSubtractorLowPass(0.005, 40);
+    // default -> alpha: 0.005 threshold: 40
+    m_bgrSub = createBackgroundSubtractorLowPass(0.005, 50);
 
 }
 

@@ -4,10 +4,22 @@ TARGET = tamper
 QT += core gui widgets
 
 CONFIG += c++14 console
+#CONFIG += debug
 CONFIG -= app_bundle
 
-DEFINES += DEBUG_BUILD
+
+
+
+DEFINES -= DEBUG_BUILD
 DEFINES -= LOG_AT_TEST
+
+
+CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
+#CONFIG(debug, debug|release):message(Debug build)
+#CONFIG(release, debug|release):message(Release build)
+#message("defines: "$$DEFINES)
+
+
 
 LIBS += -lopencv_core \
         -lopencv_imgcodecs \
@@ -28,8 +40,6 @@ HEADERS += \
 SOURCES += \
     src/backgroundsubtraction.cpp \
     src/main-analyze-video.cpp \
-    src/main-detect-motion.cpp \
-    src/main-write-to-disk.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
     src/time-stamp.cpp \
