@@ -40,6 +40,7 @@ HEADERS += \
 SOURCES += \
     src/backgroundsubtraction.cpp \
     src/main-analyze-video.cpp \
+    src/main-flicker.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
     src/time-stamp.cpp \

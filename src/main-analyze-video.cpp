@@ -22,7 +22,7 @@
 
 
 // test MotionBuffer saveToDisk by analyzing video file
-int main(int argc, char *argv[]) {
+int main_analyze_video(int argc, char *argv[]) {
     QApplication a(argc, argv);
     using namespace std;
 
