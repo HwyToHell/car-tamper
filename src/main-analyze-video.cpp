@@ -22,7 +22,7 @@
 
 
 // test MotionBuffer saveToDisk by analyzing video file
-int main_analyze_video(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     using namespace std;
 
@@ -61,14 +61,14 @@ int main_analyze_video(int argc, char *argv[]) {
         mdet.updateMotionDuration(isMotion);
         mdet.enableSaveToDisk(mb);
 
-
+        /*
         cv::imshow("video", frame);
         cv::imshow("motion", mdet.getMotionFrame());
         if (cv::waitKey(1) == 27) {
             cout << "esc -> end video processing" << endl;
             break;
         }
-
+        */
 
 
         double currentFrame = cap.get(cv::CAP_PROP_POS_FRAMES);
