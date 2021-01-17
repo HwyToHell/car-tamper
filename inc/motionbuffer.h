@@ -39,6 +39,13 @@ private:
 };
 
 
+// TODO
+// setMotionArea - in per cent of frame area
+// setMotionDuration - in sec, in number of frames (alternative)
+// setMotionRoi - in cv::Rect
+// setStartTime - in ctime
+
+
 
 /*
  * stores frames in ring buffer
