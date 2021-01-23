@@ -7,7 +7,7 @@
 #include <sstream>
 
 
-VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond, std::string videoSize) :
+VideoCaptureSimu::VideoCaptureSimu(InputMode inputMode, std::string videoSize, size_t framesPerSecond) :
     m_availVideoSizes{
         {"160x120", cv::Size(160,120)},
         {"320x240", cv::Size(320,240)},
@@ -20,14 +20,24 @@ VideoCaptureSimu::VideoCaptureSimu(size_t framesPerSecond, std::string videoSize
     m_fps{framesPerSecond},
     m_frameSize{m_availVideoSizes.find("640x480")->second},
     m_genMode{GenMode::timeStamp},
-    m_isLogging{false},
+    m_inputMode{inputMode},
+    m_isLogging{true},    //default: false
     m_isNewFrame{false},
+    m_isRead{true},
     m_isReleased{false}
-
 {
     selectVideoSize(videoSize);
+    if (m_inputMode == InputMode::videoFile) {
+        /* simulate reading from file with a very short delay of 1 ms */
+        m_fps = 1000;
+    }
     m_thread = std::thread(&VideoCaptureSimu::generateFrame, this);
 }
+
+
+VideoCaptureSimu::VideoCaptureSimu(std::string videoSize) :
+    VideoCaptureSimu{InputMode::videoFile, videoSize, 0}
+{}
 
 
 VideoCaptureSimu::~VideoCaptureSimu()
@@ -144,11 +154,14 @@ void VideoCaptureSimu::generateFrame()
         m_cndNewFrame.notify_one();
 
 
-        {
+        /* cam mode --> wait for time out (duration per frame) */
+        if (m_inputMode == InputMode::camera) {
             std::unique_lock<std::mutex> stopLock(m_mtxStop);
+
+            /* check stop condition for graceful thread suspension */
             if (m_cndStop.wait_for(stopLock, durationPerFrame, [this]{return m_isReleased;})) {
                 if (m_isLogging) {
-                    std::cout << getTimeStamp(TimeResolution::ms) << " stop thread at frame " << getFrameCount() << std::endl;
+                    std::cout << getTimeStamp(TimeResolution::ms) << " stop thread in cam mode " << getFrameCount() << std::endl;
                 }
                 break;
             } else {
@@ -156,8 +169,29 @@ void VideoCaptureSimu::generateFrame()
                     std::cout << getTimeStamp(TimeResolution::ms) << " timed out " << getFrameCount() << std::endl;
                 }
             }
+
+        /* video mode --> wait for frameRead */
+        } else {
+
+            /* wait for frame to be read */
+            {
+                std::unique_lock<std::mutex> readLock(m_mtxRead);
+                m_cndRead.wait(readLock, [this]{return m_isRead;});
+                m_isRead = false;
+            }
+
+            /* check stop condition for graceful thread suspension */
+            {
+                std::lock_guard<std::mutex> stopLock(m_mtxStop);
+                if (m_isReleased) {
+                    if (m_isLogging) {
+                        std::cout << getTimeStamp(TimeResolution::ms) << " stop thread in video mode " << getFrameCount() << std::endl;
+                    }
+                    break;
+                }
+            }
         }
-    }
+    } // while !m_isReleased
 }
 
 
@@ -173,6 +207,8 @@ double VideoCaptureSimu::get(int propid)
         return m_frameSize.height;
     case cv::CAP_PROP_FRAME_WIDTH:
         return m_frameSize.width;
+    case cv::CAP_PROP_MODE:
+        return static_cast<double>(m_inputMode);
     default:
         return 0;
     }
@@ -187,12 +223,24 @@ int VideoCaptureSimu::getFrameCount()
 
 bool VideoCaptureSimu::read(cv::Mat& frame)
 {
-    std::unique_lock<std::mutex> newFrameLock(m_mtxNewFrame);
-    m_cndNewFrame.wait(newFrameLock, [this]{return m_isNewFrame;} );
-    m_sourceFrame.copyTo(frame);
-    m_isNewFrame = false;
+    {
+        std::unique_lock<std::mutex> newFrameLock(m_mtxNewFrame);
+        m_cndNewFrame.wait(newFrameLock, [this]{return m_isNewFrame;} );
+        m_sourceFrame.copyTo(frame);
+        m_isNewFrame = false;
+    }
+
     if (m_isLogging) {
         std::cout << getTimeStamp(TimeResolution::ms) << " frame read " << getFrameCount() << std::endl;
+    }
+
+    /* video file input mode: fire frameRead event */
+    if (m_inputMode==InputMode::videoFile) {
+        {
+            std::lock_guard<std::mutex> lock(m_mtxStop);
+            m_isRead = true;
+        }
+        m_cndRead.notify_one();
     }
     return true;
 }
@@ -200,11 +248,25 @@ bool VideoCaptureSimu::read(cv::Mat& frame)
 
 void VideoCaptureSimu::release()
 {
+    /* camera input -> notify stop */
     {
         std::lock_guard<std::mutex> lock(m_mtxStop);
         m_isReleased = true;
     }
-    m_cndStop.notify_one();
+    m_cndStop.notify_one();  
+    if (m_isLogging) {
+        std::cout << getTimeStamp(TimeResolution::ms) << " release: stop notified " << getFrameCount() << std::endl;
+    }
+
+    /* video file input -> notify read */
+    {
+        std::lock_guard<std::mutex> lock(m_mtxRead);
+        m_isRead = true;
+    }
+    m_cndRead.notify_one();
+    if (m_isLogging) {
+        std::cout << getTimeStamp(TimeResolution::ms) << " release: read notified " << getFrameCount() << std::endl;
+    }
 }
 
 
@@ -229,22 +291,29 @@ bool VideoCaptureSimu::set(int propid, double value)
 {
     switch (propid) {
         case cv::CAP_PROP_FPS: {
-            const size_t fpsMax = 60;
-            const size_t fpsMin = 1;
-            size_t fps = static_cast<size_t>(value);
-            if (fps > fpsMax) {
-                m_fps = fpsMax;
-                std::cout << "fps set to max: " << fps << std::endl;
+
+            /* set fps in camera mode only */
+            if (m_inputMode == InputMode::videoFile) {
+                std::cout << "fps cannot be set in video input mode" << std::endl;
+                return false;
             } else {
-                if (fps < 1) {
-                    m_fps = fpsMin;
-                    std::cout << "fps set to min: " << fps << std::endl;
+                const size_t fpsMax = 60;
+                const size_t fpsMin = 1;
+                size_t fps = static_cast<size_t>(value);
+                if (fps > fpsMax) {
+                    m_fps = fpsMax;
+                    std::cout << "fps set to max: " << fps << std::endl;
                 } else {
-                    m_fps = fps;
-                    std::cout << "fps set to: " << fps << std::endl;
+                    if (fps < 1) {
+                        m_fps = fpsMin;
+                        std::cout << "fps set to min: " << fps << std::endl;
+                    } else {
+                        m_fps = fps;
+                        std::cout << "fps set to: " << fps << std::endl;
+                    }
                 }
+                return true;
             }
-            return true;
         }
 
         case cv::CAP_PROP_FRAME_WIDTH: {

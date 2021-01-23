@@ -2,7 +2,7 @@
 #include <catch.hpp>
 
 
-TEST_CASE("#vc001 get / set", "[VidCapSimu]") {
+TEST_CASE("TAM-26 get / set", "[VidCapSimu]") {
     VideoCaptureSimu vcs;
     SECTION("set fps in range") {
         const double fpsInRange = 20;
@@ -36,7 +36,7 @@ TEST_CASE("#vc001 get / set", "[VidCapSimu]") {
 }
 
 
-TEST_CASE("#vc002 read frame", "[VidCapSimu]") {
+TEST_CASE("TAM-25 read frame", "[VidCapSimu]") {
     VideoCaptureSimu vcs;
     SECTION("set and verify frame size output") {
         cv::Mat frame;
@@ -76,4 +76,9 @@ TEST_CASE("#vc002 read frame", "[VidCapSimu]") {
         vcs.read(frame);
         REQUIRE(frame.at<int>(0) == 1);
     }
+}
+
+TEST_CASE("TAM-22 switch input mode", "[VidCapSimu]") {
+    VideoCaptureSimu vcs;
+    SECTION("verify camera input mode") {
 }

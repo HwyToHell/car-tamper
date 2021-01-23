@@ -1,7 +1,7 @@
 // project specific
 #include "../inc/motionbuffer.h"
 #include "../inc/backgroundsubtraction.h"
-#include "../car-tamper-test/inc/video-capture-simu.h"
+#include "../inc/video-capture-simu.h"
 
 // opencv
 #include <opencv2/opencv.hpp>
@@ -24,7 +24,7 @@ void printParams(cv::VideoCapture& vidCap) {
 
 // test cv::VideoCapture (read from web cam), get and set parameters,
 // write video with cv::VideoWriter
-int main_write(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;
@@ -46,9 +46,10 @@ int main_write(int argc, char *argv[])
     */
 
     size_t fps = 10;
-    VideoCaptureSimu cap(fps);
+    // video file input mode
+    VideoCaptureSimu cap(InputMode::camera, "640x480", 30);
 
-    MotionBuffer buf(5, cap.get(cv::CAP_PROP_FPS));
+    MotionBuffer buf(10, fps);
     cv::Mat frame;
     int cnt = 0;
     //cv::VideoCapture cap(0);
@@ -81,15 +82,17 @@ int main_write(int argc, char *argv[])
 
         buf.pushToBuffer(frame);
 
-        if (cnt > 10) {
-            buf.setSaveToDisk(true);
-        }
-
         if (cnt > 20) {
-            buf.setSaveToDisk(false);
+            cap.setMode(GenMode::motionAreaAndTime, 50, 30);
+            //buf.setSaveToDisk(true);
         }
 
-        if (cnt > 25) break;
+        if (cnt > 40) {
+            cap.setMode(GenMode::motionAreaAndTime, 50, 30);
+            //buf.setSaveToDisk(false);
+        }
+
+        if (cnt > 60) break;
 
 
         if (cv::waitKey(10) == 27) {
@@ -101,7 +104,7 @@ int main_write(int argc, char *argv[])
     //buf.printBuffer();
 
     // videoWriter.release();
-    cap.release();
+    //cap.release();
     return 0;
 
 }
