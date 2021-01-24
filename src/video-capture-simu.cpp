@@ -7,7 +7,7 @@
 #include <sstream>
 
 
-VideoCaptureSimu::VideoCaptureSimu(InputMode inputMode, std::string videoSize, size_t framesPerSecond) :
+VideoCaptureSimu::VideoCaptureSimu(InputMode inputMode, std::string videoSize, size_t framesPerSecond, bool logging) :
     m_availVideoSizes{
         {"160x120", cv::Size(160,120)},
         {"320x240", cv::Size(320,240)},
@@ -17,11 +17,11 @@ VideoCaptureSimu::VideoCaptureSimu(InputMode inputMode, std::string videoSize, s
         {"1920x1080", cv::Size(1920,1080)}
     },
     m_cntFrame{0},
-    m_fps{framesPerSecond},
+    m_fps{framesPerSecond},     // default: 10
     m_frameSize{m_availVideoSizes.find("640x480")->second},
     m_genMode{GenMode::timeStamp},
     m_inputMode{inputMode},
-    m_isLogging{true},    //default: false
+    m_isLogging{logging},       //default: false
     m_isNewFrame{false},
     m_isRead{true},
     m_isReleased{false}

@@ -17,7 +17,7 @@ class VideoCaptureSimu
 {
 public:
     // camera input mode
-    VideoCaptureSimu(InputMode inputMode, std::string videoSize, size_t framesPerSecond = 10);
+    VideoCaptureSimu(InputMode inputMode, std::string videoSize, size_t framesPerSecond = 10, bool logging = false);
     // video file input mode
     VideoCaptureSimu(std::string videoSize = "640x480");
     ~VideoCaptureSimu();

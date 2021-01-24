@@ -47,9 +47,12 @@ int main(int argc, char *argv[])
 
     size_t fps = 10;
     // video file input mode
-    VideoCaptureSimu cap(InputMode::camera, "640x480", 30);
+    VideoCaptureSimu cap(InputMode::videoFile, "640x480", fps);
+    cout << "get:  " << cap.get(cv::CAP_PROP_MODE) << endl;
+    cout << "cast: " << static_cast<double>(InputMode::videoFile) << endl;
 
-    MotionBuffer buf(10, fps);
+    return 0;
+
     cv::Mat frame;
     int cnt = 0;
     //cv::VideoCapture cap(0);
@@ -71,7 +74,7 @@ int main(int argc, char *argv[])
 
     while (cap.read(frame)) {
         ++cnt;
-        cv::imshow("video", frame);
+        //cv::imshow("video", frame);
         // videoWriter.write(frame);
         // std::string imgFile = getTimeStampMs() + ".jpg";
         // cv::imwrite(imgFile, frame);
@@ -80,25 +83,25 @@ int main(int argc, char *argv[])
         cout << endl << "frame: " << cnt << endl;
 
 
-        buf.pushToBuffer(frame);
+
 
         if (cnt > 20) {
             cap.setMode(GenMode::motionAreaAndTime, 50, 30);
-            //buf.setSaveToDisk(true);
         }
 
         if (cnt > 40) {
-            cap.setMode(GenMode::motionAreaAndTime, 50, 30);
-            //buf.setSaveToDisk(false);
+            cap.setMode(GenMode::motionAreaAndTime, 50, 80);
         }
 
         if (cnt > 60) break;
 
 
+        /*
         if (cv::waitKey(10) == 27) {
             cout << "esc -> end video processing" << endl;
             break;
         }
+        */
     }
 
     //buf.printBuffer();

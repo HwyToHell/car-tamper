@@ -2,6 +2,8 @@
 #include "../inc/video-capture-simu.h"
 #include <catch.hpp>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/filesystem.hpp>
 
 #include <chrono>
 #include <thread>
@@ -88,7 +90,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
      * check DEBUG output, if this is the case
      */
     const size_t fps = 10;
-    VideoCaptureSimu vcs(fps, "160x120");
+    VideoCaptureSimu vcs(InputMode::camera, "160x120", fps);
 
     /* number of logged frames = (buffer size - 1) + (stop - start - 1),
      *                            frames in buffer      serial frames
@@ -109,7 +111,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         std::string videoFile = writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
 
-        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::read);
+        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         /* for buffer size one -> one frame is logged */
@@ -124,7 +126,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         const int startFrame = bufSizeInRange + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
-        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::read);
+        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         /* bufferSize - 1 frames logged (if frame rate is sufficiently low) */
@@ -138,7 +140,7 @@ TEST_CASE("#mb001 constructor: buffer size", "[MotionBuffer]") {
         const int startFrame = maxBufSize + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
         std::string logFileRelPath = mb.getLogFileRelPath();
-        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::read);
+        cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         /* bufferSize - 1 frames logged (if frame rate is sufficiently low) */
@@ -175,7 +177,7 @@ TEST_CASE("#mb002 constructor: fps", "[MotionBuffer]") {
     const std::string logDir("logDir");
     const size_t bufferSize = 10;
     const size_t sourceFps = 30;
-    VideoCaptureSimu vcs(sourceFps, "160x120");
+    VideoCaptureSimu vcs(InputMode::camera, "160x120", sourceFps);
     cv::VideoCapture cap;
 
     SECTION("fps below min") {

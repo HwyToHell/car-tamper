@@ -2,8 +2,8 @@
 #include <catch.hpp>
 
 
-TEST_CASE("TAM-26 get / set", "[VidCapSimu]") {
-    VideoCaptureSimu vcs;
+TEST_CASE("TAM-26 get / set", "[VideoCaptureSimu]") {
+    VideoCaptureSimu vcs(InputMode::camera, "640x480");
     SECTION("set fps in range") {
         const double fpsInRange = 20;
         vcs.set(cv::CAP_PROP_FPS, fpsInRange);
@@ -36,8 +36,8 @@ TEST_CASE("TAM-26 get / set", "[VidCapSimu]") {
 }
 
 
-TEST_CASE("TAM-25 read frame", "[VidCapSimu]") {
-    VideoCaptureSimu vcs;
+TEST_CASE("TAM-25 read frame", "[VideoCaptureSimu]") {
+    VideoCaptureSimu vcs(InputMode::camera, "640x480");
     SECTION("set and verify frame size output") {
         cv::Mat frame;
         const double height = 1080;
@@ -47,7 +47,7 @@ TEST_CASE("TAM-25 read frame", "[VidCapSimu]") {
         vcs.read(frame);
         REQUIRE(frame.size().height == Approx(height));
     }
-    SECTION("verify frame timing") {
+    SECTION("verify frame timing for camera mode") {
         const double fps = 60;
         vcs.set(cv::CAP_PROP_FPS, fps);
         REQUIRE(vcs.get(cv::CAP_PROP_FPS) == Approx(fps));
@@ -78,7 +78,51 @@ TEST_CASE("TAM-25 read frame", "[VidCapSimu]") {
     }
 }
 
-TEST_CASE("TAM-22 switch input mode", "[VidCapSimu]") {
-    VideoCaptureSimu vcs;
-    SECTION("verify camera input mode") {
+TEST_CASE("TAM-22 switch input mode", "[VideoCaptureSimu]") {
+    // use videoFile input mode
+    VideoCaptureSimu vcs(InputMode::videoFile, "160x120");
+    vcs.get(cv::CAP_PROP_MODE);
+    SECTION("verify video file input mode") {
+        REQUIRE(vcs.get(cv::CAP_PROP_MODE) == Approx(static_cast<double>(InputMode::videoFile)));
+    }
+    SECTION("verify artificial frame rate has been set to 1000 fps") {
+        REQUIRE(vcs.get(cv::CAP_PROP_FPS) == Approx(1000));
+    }
+}
+
+TEST_CASE("TAM-28 verify generation mode", "[VideoCaptureSimu]") {
+    std::string frameSize = "160x120";
+    VideoCaptureSimu vcs(InputMode::videoFile, frameSize);
+    SECTION("verify size and grey level of motion area") {
+        int area_perCent = 50;
+        int grayLevel_perCent = 50;
+        vcs.setMode(GenMode::motionArea, area_perCent, grayLevel_perCent);
+
+        // convert per cent to absolute
+        int width = stoi(frameSize.substr(0, frameSize.find('x')));
+        int height = stoi(frameSize.substr(frameSize.find('x')+1));
+        int motionArea = width * height * area_perCent / 100;
+
+        int grayLevel = UCHAR_MAX * grayLevel_perCent / 100;
+
+        cv::Mat frame;
+        vcs.read(frame);
+
+        // setMode will be applied after another read handshake
+        vcs.read(frame);
+        // cv::imwrite("frame2.png", frame);
+
+        // compare calculated motion area with counted pixels of motion area
+        cv::Mat motionGray, motionBinary;
+        cv::cvtColor(frame, motionGray, cv::COLOR_BGRA2GRAY);
+        cv::inRange(motionGray, grayLevel-1, grayLevel+1, motionBinary);
+        // add one as time stamp is encoded in first pixel of last row
+        int motionAreaCounted = cv::countNonZero(motionBinary) + 1;
+        REQUIRE(motionArea == motionAreaCounted);
+
+        // compare calculated gray level with probed gray level of pixel
+        int midCol = width / 2;
+        int grayLevelProbed = static_cast<int>(motionGray.at<uchar>(0, midCol));
+        REQUIRE(grayLevel == grayLevelProbed);
+    }
 }
