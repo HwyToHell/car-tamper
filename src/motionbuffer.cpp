@@ -76,14 +76,16 @@ void LogFrame::write(cv::Mat frame) {
 /* MotionBuffer **************************************************************/
 MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput,
                            std::string videoDir,
-                           std::string logDirForTest) :
+                           std::string logDir,
+                           bool logging) :
     m_setSaveToDisk{false},
     m_fps{fpsOutput},
     m_frameSize{cv::Size(640,480)},
     m_isBufferAccessible{false},
+    m_isLogging{logging},
     m_isNewFile{false},
     m_isSaveToDiskRunning{false},
-    m_logAtTest{logDirForTest},
+    m_logAtTest{logDir},
     m_postBufferSize{preBufferSize},
     m_preBufferSize{preBufferSize},
     m_saveToDiskState{State::createVideoFile},
@@ -177,9 +179,9 @@ bool MotionBuffer::postBufferFinished(cv::VideoWriter& vidWriter)
         DEBUG(getTimeStampMs() << " last post frame copied");
 
         vidWriter.write(lastFrame);
-        #ifdef LOG_AT_TEST
-        m_logAtTest.write(lastFrame);
-        #endif
+        if (m_isLogging) {
+            m_logAtTest.write(lastFrame);
+        }
         DEBUG(getTimeStampMs() << " last post frame written");
 
         --m_remainingPostFrames;
@@ -299,9 +301,9 @@ void MotionBuffer::saveMotionToDisk()
                 m_terminate = true;
                 break;
             }
-            #ifdef LOG_AT_TEST
-            m_logAtTest.create(getTimeStamp(TimeResolution::ms_NoBlank) + ".json");
-            #endif
+            if (m_isLogging) {
+                m_logAtTest.create(getTimeStamp(TimeResolution::ms_NoBlank) + ".json");
+            }
             DEBUG(getTimeStampMs() << " video file created");
 
             m_saveToDiskState = State::writeActiveMotion;
@@ -321,9 +323,9 @@ void MotionBuffer::saveMotionToDisk()
 
                 videoWriter.release();
                 m_saveToDiskState = State::createVideoFile;
-                #ifdef LOG_AT_TEST
-                m_logAtTest.close();
-                #endif
+                if (m_isLogging) {
+                    m_logAtTest.close();
+                }
                 DEBUG(getTimeStampMs() << " videoWriter released");
 
                 /* notify caller thread waitForVideoFile(),
@@ -400,9 +402,9 @@ void MotionBuffer::writeUntilBufferEmpty(cv::VideoWriter& vidWriter)
         DEBUG(getTimeStampMs() << " last frame copied");
 
         vidWriter.write(lastFrame);
-        #ifdef LOG_AT_TEST
-        m_logAtTest.write(lastFrame);
-        #endif
+        if (m_isLogging) {
+            m_logAtTest.write(lastFrame);
+        }
         DEBUG(getTimeStampMs() << " last frame written");
 
         if (stopWriting) {

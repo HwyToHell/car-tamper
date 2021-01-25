@@ -58,7 +58,8 @@ class MotionBuffer
 public:
     MotionBuffer(std::size_t preBufferSize, double fpsOutput,
                  std::string videoDir       = "videos",
-                 std::string logDirForTest  = "log");
+                 std::string logDir         = "log",
+                 bool        logging        = false);
     ~MotionBuffer();
     std::string getLogFileRelPath();
     std::string getVideoFileName();
@@ -91,6 +92,7 @@ private:
     int                     m_frameCount;
     cv::Size                m_frameSize;
     bool                    m_isBufferAccessible;
+    bool                    m_isLogging;
     bool                    m_isNewFile;
     bool                    m_isSaveToDiskRunning;
     /* logger for frame count and timinge, used in unit test,

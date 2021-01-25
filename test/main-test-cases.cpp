@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
     (void)argc;
     using namespace std;
-    string cases("[VideoCaptureSimu]");
+    string cases("[VideoCaptureSimu],[MotionBuffer]");
 
     const int ac = 2; // # of cli arguments for catch app
     const char* av[ac];
