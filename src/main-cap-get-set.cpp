@@ -45,32 +45,16 @@ int main(int argc, char *argv[])
     cout << "height:  " << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << endl;
     */
 
-    size_t fps = 10;
-    // video file input mode
-    VideoCaptureSimu cap(InputMode::videoFile, "640x480", fps);
+    size_t fps = 60;
+    VideoCaptureSimu cap(InputMode::camera, "640x480", fps, false);
     cout << "get:  " << cap.get(cv::CAP_PROP_MODE) << endl;
     cout << "cast: " << static_cast<double>(InputMode::videoFile) << endl;
 
-    return 0;
 
     cv::Mat frame;
     int cnt = 0;
-    //cv::VideoCapture cap(0);
 
-    /*
-    cv::VideoWriter videoWriter;
-    std::string filename = getTimeStamp(TimeResolution::sec) + ".avi";
-    int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
-
-    int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-    int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
-    cout << width << "x" << height << endl;
-
-    if(!videoWriter.open(filename, fourcc, fps, cv::Size(width,height) )) {
-        std::cout << "cannot open file: " << filename << std::endl;
-    }
-    */
-
+    MotionBuffer buf(100, fps, "videos", "log", true);
 
     while (cap.read(frame)) {
         ++cnt;
@@ -82,18 +66,20 @@ int main(int argc, char *argv[])
         // test buffer functions
         cout << endl << "frame: " << cnt << endl;
 
+        buf.pushToBuffer(frame);
 
 
-
-        if (cnt > 20) {
-            cap.setMode(GenMode::motionAreaAndTime, 50, 30);
+        if (cnt >= 110) {
+            //cap.setMode(GenMode::motionAreaAndTime, 50, 30);
+            buf.setSaveToDisk(true);
         }
 
-        if (cnt > 40) {
-            cap.setMode(GenMode::motionAreaAndTime, 50, 80);
+        if (cnt >= 112) {
+            //cap.setMode(GenMode::motionAreaAndTime, 50, 80);
+            buf.setSaveToDisk(false);
         }
 
-        if (cnt > 60) break;
+        if (cnt >= 114) break;
 
 
         /*
@@ -103,6 +89,9 @@ int main(int argc, char *argv[])
         }
         */
     }
+    std::string videoFileName = buf.getVideoFileName();
+    cout << "videoFileName: " << videoFileName << endl;
+    cout << "end reading frames " << endl;
 
     //buf.printBuffer();
 

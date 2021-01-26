@@ -121,8 +121,8 @@ TEST_CASE("TAM-18 constructor: buffer size", "[MotionBuffer]") {
         cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        /* for buffer size one -> one frame is logged */
-        REQUIRE(frmCounts.size() == minBufSize);
+        /* min buf size one -> two frames logged */
+        REQUIRE(frmCounts.size() == minBufSize + 1);
     }
 
     SECTION("preBufferSize in range") {
@@ -145,7 +145,6 @@ TEST_CASE("TAM-18 constructor: buffer size", "[MotionBuffer]") {
         MotionBuffer mb(bufSizeAbove, fps, videoDir, logDir, true);
         const int startFrame = maxBufSize + 10;
         writeToDiskTest(mb, vcs, startFrame, startFrame+1);
-        std::cout << "alive 1" << std::endl;
 
         std::string logFileRelPath = mb.getLogFileRelPath();
         cv::FileStorage fs(logFileRelPath, cv::FileStorage::Mode::READ);
@@ -169,7 +168,6 @@ TEST_CASE("TAM-18 constructor: buffer size", "[MotionBuffer]") {
             REQUIRE(frameTimePrev == Approx(frameTime).epsilon(0.1));
             frameTimePrev = frameTime;
         }
-        std::cout << "alive 2" << std::endl;
     }
 
 

@@ -17,7 +17,7 @@ DEFINES -= LOG_AT_TEST
 CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
 #CONFIG(debug, debug|release):message(Debug build)
 #CONFIG(release, debug|release):message(Release build)
-# message("defines: "$$DEFINES)
+#message("defines: "$$DEFINES)
 
 
 

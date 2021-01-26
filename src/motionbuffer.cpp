@@ -91,13 +91,14 @@ MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput,
     m_saveToDiskState{State::createVideoFile},
     m_terminate{false}
 {
-    /* limit preBufferSize in order to have saveToDisk algo work properly (min: 1)
+    /* limit pre and postBufferSize in order to have saveToDisk algo work properly (min: 1)
      * avoid heap memory shortage (max: 60) */
     if (preBufferSize < 1) {
         m_preBufferSize = 1;
     } else if (preBufferSize > 60) {
         m_preBufferSize = 60;
     }
+    m_postBufferSize = m_preBufferSize;
 
     /* limit frames per second for output video in order to
      * observe reasonable motion (min: 1)
@@ -176,13 +177,13 @@ bool MotionBuffer::postBufferFinished(cv::VideoWriter& vidWriter)
             m_buffer.pop_back();
             manyFramesAvailabe = m_buffer.size() > 1;
         }
-        DEBUG(getTimeStampMs() << " last post frame copied");
+        DEBUG(getTimeStampMs() << " post frame " << m_remainingPostFrames << " copied");
 
         vidWriter.write(lastFrame);
         if (m_isLogging) {
             m_logAtTest.write(lastFrame);
         }
-        DEBUG(getTimeStampMs() << " last post frame written");
+        DEBUG(getTimeStampMs() << " post frame " << m_remainingPostFrames << " written");
 
         --m_remainingPostFrames;
 
@@ -209,6 +210,7 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame)
             m_isBufferAccessible = true;
         }
         m_cndBufferAccess.notify_one();
+        DEBUG(getTimeStampMs() << " newFrameToBuffer notified");
 
     /* NOT saveToDiskRunning */
     } else {
@@ -239,6 +241,17 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame)
 void MotionBuffer::releaseBuffer()
 {
     DEBUG(getTimeStampMs() << " release called");
+
+    // wait for writeToPostBuffer() to be finished
+    /*
+    if (m_saveToDiskState == State::writePostBuffer) {
+        DEBUG(getTimeStampMs() << " in state writePostBuffer: wait for newFile event");
+        std::unique_lock<std::mutex> newFileLock(m_mtxNewFileNotice);
+        m_cndNewFile.wait(newFileLock, [this]{return m_isNewFile;});
+        m_isNewFile = false;
+        DEBUG(getTimeStampMs() << " in state writePostBuffer: wait for newFile finished");
+    }
+    */
 
     m_terminate = true;
     {
@@ -283,7 +296,10 @@ void MotionBuffer::saveMotionToDisk()
             m_isBufferAccessible = false;
         }
         DEBUG(getTimeStampMs() << " wait for newFrameToBuffer finished");
-        if (m_terminate) return;
+        if (m_terminate) {
+            DEBUG(getTimeStampMs() << " terminate thread saveToDisk");
+            return;
+        }
 
         switch (m_saveToDiskState) {
         case State::noMotion:
