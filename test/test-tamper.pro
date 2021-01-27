@@ -7,7 +7,7 @@ CONFIG -= app_bundle
 
 #define DEBUG_BUILD in debug mode only
 CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
-message($$DEFINES)
+#message($$DEFINES)
 
 INCLUDEPATH += $$(HOME)/app-dev/catch/catch_2.8.0
 #message(catch dir: $$INCLUDEPATH)

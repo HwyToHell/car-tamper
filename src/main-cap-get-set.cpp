@@ -69,17 +69,17 @@ int main(int argc, char *argv[])
         buf.pushToBuffer(frame);
 
 
-        if (cnt >= 110) {
+        if (cnt >= 40) {
             //cap.setMode(GenMode::motionAreaAndTime, 50, 30);
             buf.setSaveToDisk(true);
         }
 
-        if (cnt >= 112) {
+        if (cnt >= 41) {
             //cap.setMode(GenMode::motionAreaAndTime, 50, 80);
             buf.setSaveToDisk(false);
         }
 
-        if (cnt >= 114) break;
+        if (cnt >= 45) break;
 
 
         /*
