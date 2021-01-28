@@ -327,38 +327,38 @@ void MotionBuffer::saveMotionToDisk()
         }
         case State::writeActiveMotion:
             writeUntilBufferEmpty(videoWriter);
+
+            if (m_saveToDiskState == State::writePostBuffer) {
+                if (postBufferFinished(videoWriter)) {
+                    DEBUG("all post frames written");
+                } else {
+                    DEBUG("buffer empty, was not able to write all post frames");
+                }
+
+                DEBUG(getTimeStampMs() << " post buffer finished, releasing videoWriter ...");
+                {
+                    std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+                    m_isSaveToDiskRunning = false;
+                    m_isBufferAccessible = false;
+                }
+
+                videoWriter.release();
+                m_saveToDiskState = State::createVideoFile;
+                if (m_isLogging) {
+                    m_logAtTest.close();
+                }
+                DEBUG(getTimeStampMs() << " videoWriter released");
+
+                /* notify caller thread waitForVideoFile(),
+                 * that there is a new video file available */
+                m_isNewFile = true;
+                m_cndNewFile.notify_one();
+            }
             break;
-        case State::writePostBuffer:
-        {
-            if (postBufferFinished(videoWriter)) {
-                DEBUG("all post frames written");
-            } else {
-                DEBUG("buffer empty, was not able to write all post frames");
-            }
 
-            DEBUG(getTimeStampMs() << " post buffer finished, releasing videoWriter ...");
-            {
-                std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-                m_isSaveToDiskRunning = false;
-                m_isBufferAccessible = false;
-            }
-
-            videoWriter.release();
-            m_saveToDiskState = State::createVideoFile;
-            if (m_isLogging) {
-                m_logAtTest.close();
-            }
-            DEBUG(getTimeStampMs() << " videoWriter released");
-
-            /* notify caller thread waitForVideoFile(),
-             * that there is a new video file available */
-            m_isNewFile = true;
-            m_cndNewFile.notify_one();
-
-            break;
-        }
         } /* switch state */
     } /* while thread not terminated */
+    DEBUG(getTimeStampMs() << " saveToDisk finished");
 }
 
 void MotionBuffer::setSaveToDisk(bool value)
