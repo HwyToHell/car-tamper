@@ -1,11 +1,15 @@
 #define CATCH_CONFIG_RUNNER
 #include <catch.hpp>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/filesystem.hpp>
+
 int main(int argc, char *argv[])
 {
     (void)argc;
     using namespace std;
-    string cases("[VideoCaptureSimu],[MotionBuffer]");
+    string cases("[MotionBuffer]");
+    //string cases("[MotionBuffer],[TearDown]");
 
     const int ac = 2; // # of cli arguments for catch app
     const char* av[ac];
