@@ -39,8 +39,8 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
-    src/main-analyze-video.cpp \
     src/main-cap-get-set.cpp \
+    src/main-read-json.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
     src/time-stamp.cpp \

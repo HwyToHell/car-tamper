@@ -33,6 +33,7 @@
          - [main\-cap.cpp](src/wip/main-cap.cpp)							test video capture loop
          - [main\-clock.cpp](src/wip/main-clock.cpp)						test std::chrono
          - [main\-detect\-motion.cpp](src/main-detect-motion.cpp)			test motion detection by using video capture simu
+         - [main\-read\-json.cpp](src/wip/main-read-json.cpp)               test cv::FileStorage functionality
          - [main\-write\-to\-disk.cpp](src/main-write-to-disk.cpp)			test write to disk functionality
          - [main\-mat.cpp](src/wip/main-mat.cpp)							test cv::Mat	
          - [main\-qt\-file\-picker.cpp](src/wip/main-qt-file-picker.cpp)	test video capture from file (qt file picker)

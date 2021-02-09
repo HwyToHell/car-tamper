@@ -330,6 +330,7 @@ void MotionBuffer::saveMotionToDisk()
                     DEBUG("buffer empty, was not able to write all post frames");
                     // in State::writePostBuffer
                     // write remaining buffer elements and release videoWriter
+                    // TODO problem herer
                 }
             }
             break;
