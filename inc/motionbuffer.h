@@ -71,12 +71,12 @@ public:
                     writeActiveMotion,
                     writePostBuffer
                 };
-    void        toStateCreate(cv::VideoWriter& vidWriter);
+    void        toStateCreate();
     std::string waitForVideoFile();
 private:
     void                    saveMotionToDisk();
-    void                    writeUntilBufferEmpty(cv::VideoWriter& vidWriter);
-    bool                    postBufferFinished(cv::VideoWriter& vidWriter);
+    void                    writeUntilBufferEmpty();
+    bool                    isPostBufferFinished();
     bool                    m_setSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
@@ -105,6 +105,7 @@ private:
     std::thread             m_threadSaveToDisk;
     std::string             m_videoSubDir;
     std::string             m_videoFileName;
+    cv::VideoWriter         m_videoWriter;
 };
 
 

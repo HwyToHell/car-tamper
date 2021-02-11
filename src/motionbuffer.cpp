@@ -153,7 +153,7 @@ bool MotionBuffer::isSaveToDiskRunning()
 
 /* continue writing frames until buffer emptied or no remaining post frame
  * returns true if complete buffer has been written */
-bool MotionBuffer::postBufferFinished(cv::VideoWriter& vidWriter)
+bool MotionBuffer::isPostBufferFinished()
 {
     cv::Mat lastFrame;
     // DEBUG(getTimeStampMs() << " bufSize " << m_buffer.size());
@@ -167,9 +167,9 @@ bool MotionBuffer::postBufferFinished(cv::VideoWriter& vidWriter)
             m_buffer.pop_back();
             manyFramesAvailabe = m_buffer.size() > 1;
         }
-        DEBUG(getTimeStampMs() << " post frame " << m_remainingPostFrames << " copied");
+        DEBUG(getTimeStampMs() << " state: " << m_saveToDiskState << " post frame " << m_remainingPostFrames << " copied");
 
-        vidWriter.write(lastFrame);
+        m_videoWriter.write(lastFrame);
         if (m_isLogging) {
             m_logAtTest.write(lastFrame);
         }
@@ -234,6 +234,10 @@ void MotionBuffer::releaseBuffer()
     DEBUG(getTimeStampMs() << " release called");
 
     // wait for writeToPostBuffer() to be finished
+    // if in State::WritePostBuffer -> create file
+    if (m_saveToDiskState == State::writePostBuffer) {
+        toStateCreate();
+    }
     /*
     if (m_saveToDiskState == State::writePostBuffer) {
         DEBUG(getTimeStampMs() << " in state writePostBuffer: wait for newFile event");
@@ -274,7 +278,6 @@ void MotionBuffer::resetNewMotionFile()
 /* run thread func until terminate signal has been received */
 void MotionBuffer::saveMotionToDisk()
 {
-    cv::VideoWriter videoWriter;
     DEBUG(getTimeStampMs() << " wait for newFrameToBuffer started");
 
     while (!m_terminate) {
@@ -283,10 +286,13 @@ void MotionBuffer::saveMotionToDisk()
         {
             std::unique_lock<std::mutex> bufferLock(m_mtxBufferAccess);
             m_cndBufferAccess.wait(bufferLock, [this]{return m_isBufferAccessible;});
-            // DEBUG("bufAccessible: " << m_isBufferAccessible << ", s2dRunning: " << m_isSaveToDiskRunning  << ", setS2D: " << m_setSaveToDisk);
             m_isBufferAccessible = false;
         }
         DEBUG(getTimeStampMs() << " wait for newFrameToBuffer finished");
+        DEBUG("bufSize: " << m_buffer.size()
+              << ", setS2D: " << m_setSaveToDisk
+              << ", S2DRunning: " << m_isSaveToDiskRunning);
+
         if (m_terminate) {
             DEBUG(getTimeStampMs() << " terminate thread saveToDisk");
             return;
@@ -303,7 +309,7 @@ void MotionBuffer::saveMotionToDisk()
             int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
             assert(m_frameSize != cv::Size(0,0));
 
-            if(!videoWriter.open(fileNameRel, fourcc, m_fps, m_frameSize)) {
+            if(!m_videoWriter.open(fileNameRel, fourcc, m_fps, m_frameSize)) {
                 std::cout << "cannot open file: " << fileNameRel << std::endl;
                 m_isSaveToDiskRunning = false;
                 m_terminate = true;
@@ -319,13 +325,13 @@ void MotionBuffer::saveMotionToDisk()
         }
 
         case State::writeActiveMotion:
-            writeUntilBufferEmpty(videoWriter);
+            writeUntilBufferEmpty();
 
             if (m_saveToDiskState == State::writePostBuffer) {
-                if (postBufferFinished(videoWriter)) {
+                if (isPostBufferFinished()) {
                     DEBUG("all post frames written");
                     // release videoWriter (video input mode)
-                    toStateCreate(videoWriter);
+                    toStateCreate();
                 } else {
                     DEBUG("buffer empty, was not able to write all post frames");
                     // in State::writePostBuffer
@@ -336,12 +342,10 @@ void MotionBuffer::saveMotionToDisk()
             break;
 
         case State::writePostBuffer:
-            DEBUG(getTimeStampMs() << " in state writePostBuffer");
-
-            if (postBufferFinished(videoWriter)) {
+            if (isPostBufferFinished()) {
                 DEBUG("all post frames written");
                 // release videoWriter (video input mode)
-                toStateCreate(videoWriter);
+                toStateCreate();
             }
             break;
 
@@ -420,7 +424,7 @@ void MotionBuffer::setFpsOutput(double fps) {
 
 
 
-void MotionBuffer::toStateCreate(cv::VideoWriter& vidWriter) {
+void MotionBuffer::toStateCreate() {
     DEBUG(getTimeStampMs() << " post buffer finished, releasing videoWriter ...");
     {
         std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
@@ -428,7 +432,7 @@ void MotionBuffer::toStateCreate(cv::VideoWriter& vidWriter) {
         m_isBufferAccessible = false;
     }
 
-    vidWriter.release();
+    m_videoWriter.release();
     m_saveToDiskState = State::createVideoFile;
     if (m_isLogging) {
         m_logAtTest.close();
@@ -456,7 +460,7 @@ std::string MotionBuffer::waitForVideoFile()
 
 
 /* continue writing frames to file until buffer emptied */
-void MotionBuffer::writeUntilBufferEmpty(cv::VideoWriter& vidWriter)
+void MotionBuffer::writeUntilBufferEmpty()
 {
     cv::Mat lastFrame;
     bool manyFramesAvailabe = true;
@@ -471,7 +475,7 @@ void MotionBuffer::writeUntilBufferEmpty(cv::VideoWriter& vidWriter)
         }
         DEBUG(getTimeStampMs() << " last frame copied");
 
-        vidWriter.write(lastFrame);
+        m_videoWriter.write(lastFrame);
         if (m_isLogging) {
             m_logAtTest.write(lastFrame);
         }

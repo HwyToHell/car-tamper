@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     (void)argc;
     using namespace std;
-    string cases("[MotionBuffer]");
+    string cases("[MotionBuffer][TAM-19]");
     //string cases("[MotionBuffer],[TearDown]");
 
     const int ac = 2; // # of cli arguments for catch app
