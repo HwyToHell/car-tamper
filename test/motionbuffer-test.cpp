@@ -70,7 +70,7 @@ LogFiles writeToDiskTest(VideoCaptureSimu& cap, size_t bufSize, double fpsOut,
         return logFiles;
     }
 
-    MotionBuffer buf(bufSize, fpsOut, videoDir, logDir, true);
+    MotionBuffer buf(bufSize, fpsOut, videoDir, logDir, isLogging);
     cv::Mat frame;
     for (int count = 0; count < overrun; ++count) {
         std::cout << std::endl << "pass: " << count << std::endl;
@@ -200,6 +200,12 @@ TEST_CASE("TAM-19 ring buffer", "[MotionBuffer][TAM-19]") {
         for (size_t n = 1; n < frmCounts.size(); ++n) {
             REQUIRE((frmCounts[n] - frmCounts[n-1]) > 0);
         }
+
+        // calculate frame rate
+        std::vector<int> timeStamps = getBufferSamples(fs, "time stamp");
+        double fps = 1000 * timeStamps.size() / static_cast<double>(timeStamps.back() - timeStamps.front());
+        std::cout << "fps videoFile input mode: " << fps << std::endl;
+
     } // SECTION videoFile input mode
 
     SECTION("camera input mode") {
@@ -416,8 +422,6 @@ void verifyFps (size_t bufSize, size_t fpsSource, double fpsOutSet, double fpsOu
 }
 
 
-
-/*
 // verify properties of written video file such as
 // fps, frame order, frame size, output directory, file name
 TEST_CASE("TAM-20 constructor: fps", "[MotionBuffer][TAM-20]") {
@@ -446,12 +450,61 @@ TEST_CASE("TAM-20 constructor: fps", "[MotionBuffer][TAM-20]") {
             verifyFps(bufferSize, sourceFps, fpsAboveMax, fpsMaxTest, smallestFrame);
         }
     }
-}
-*/
 
+    SECTION("largest frame size, highest fps") {
+        std::string largestFrame("1920x1080");
+        const size_t bufferSize = 60;
+        const double fpsMax = 60;
+
+        verifyFps(bufferSize, sourceFps, fpsMax, fpsMax, largestFrame);
+    }
+}
+
+
+// read multiple video input files, use same buffer instance
+TEST_CASE("TAM-35 process multiple video files", "[MotionBuffer][TAM-35]") {
+    const size_t    fps         =  30;
+    const size_t    bufSize     =  30;
+    const int       startS2D    =  30;
+    const int       stopS2D     = 100;
+    const int       fileLen     = 135;
+
+    VideoCaptureSimu vcs(InputMode::videoFile, "160x120", fps, false);
+    MotionBuffer buf(bufSize, fps, videoDir, logDir, isLogging);
+    cv::Mat frame;
+
+    // 1st pass
+    for (int count = 0; count < fileLen; ++count) {
+        std::cout << std::endl << "pass: " << count << std::endl;
+
+        if (count >= startS2D && !buf.isSaveToDiskRunning())
+            buf.setSaveToDisk(true);
+
+        if (count >= stopS2D)
+            buf.setSaveToDisk(false);
+
+        vcs.read(frame);
+        buf.pushToBuffer(frame);
+    }
+    // wait for post buffer to finish
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // release necessary to finish post buffer and close video file
+    buf.releaseBuffer();
+
+    // re-read file
+    cv::VideoCapture cap;
+    std::string videoFileRelPath = videoDir + '/' + buf.getVideoFileName();
+    cap.open(videoFileRelPath);
+    REQUIRE(cap.isOpened() == true);
+
+    // save2disk frame count = pre-buffer + activeMotion + post-buffer
+    // int s2dFrameCount = bufSize + (stopS2D - startS2D) + (fileLen - stopS2D);
+    int s2dFrameCount = bufSize + (stopS2D - startS2D) + (bufSize);
+    REQUIRE(cap.get(cv::CAP_PROP_FRAME_COUNT) == Approx(s2dFrameCount - 2).epsilon(0.01));
+}
 
 // clean up
-TEST_CASE("delete temporary files", "[TearDown]") {
+TEST_CASE("TAM-31 delete temporary files", "[MotionBuffer][TearDown]") {
     std::string cwd = cv::utils::fs::getcwd();
     cv::utils::fs::remove_all(cwd + "/" + logDir);
     cv::utils::fs::remove_all(cwd + "/" + videoDir);

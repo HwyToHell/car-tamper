@@ -473,7 +473,7 @@ void MotionBuffer::writeUntilBufferEmpty()
             manyFramesAvailabe = m_buffer.size() > 1;
             stopWriting = !m_setSaveToDisk;
         }
-        DEBUG(getTimeStampMs() << " last frame copied");
+        DEBUG("bufSize: " << m_buffer.size() << " last frame copied");
 
         m_videoWriter.write(lastFrame);
         if (m_isLogging) {

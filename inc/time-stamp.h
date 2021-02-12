@@ -16,4 +16,6 @@ template <typename T> std::chrono::milliseconds asMilliSec(T duration);
 
 long elapsedMs(std::chrono::system_clock::time_point startTimePoint);
 
+long elapsedMicroSec(std::chrono::system_clock::time_point startTimePoint);
+
 #endif // TIMESTAMP_H
