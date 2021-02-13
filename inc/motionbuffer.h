@@ -58,7 +58,7 @@ public:
     std::string getVideoFileName();
     bool        isSaveToDiskRunning();
     void        pushToBuffer(cv::Mat& frame);
-    void        releaseBuffer();
+    void        releaseBuffer(bool terminate = false);
     void        resetNewMotionFile();
     void        setFpsOutput(double fps);
     void        setPostBuffer(std::size_t nFrames);

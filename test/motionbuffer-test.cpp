@@ -469,10 +469,12 @@ TEST_CASE("TAM-35 process multiple video files", "[MotionBuffer][TAM-35]") {
     const int       stopS2D     = 100;
     const int       fileLen     = 135;
 
-    VideoCaptureSimu vcs(InputMode::videoFile, "160x120", fps, false);
+    VideoCaptureSimu vcs(InputMode::camera, "160x120", fps, false);
     MotionBuffer buf(bufSize, fps, videoDir, logDir, isLogging);
+    cv::VideoCapture cap; // capture for re-reading generated video file
     cv::Mat frame;
 
+    // ------------------------------------------------------------------------
     // 1st pass
     for (int count = 0; count < fileLen; ++count) {
         std::cout << std::endl << "pass: " << count << std::endl;
@@ -492,15 +494,51 @@ TEST_CASE("TAM-35 process multiple video files", "[MotionBuffer][TAM-35]") {
     buf.releaseBuffer();
 
     // re-read file
-    cv::VideoCapture cap;
-    std::string videoFileRelPath = videoDir + '/' + buf.getVideoFileName();
-    cap.open(videoFileRelPath);
+    std::string videoFile1st = videoDir + '/' + buf.getVideoFileName();
+    std::cout << "video output: " << videoFile1st << std::endl;
+    cap.open(videoFile1st);
     REQUIRE(cap.isOpened() == true);
 
     // save2disk frame count = pre-buffer + activeMotion + post-buffer
     // int s2dFrameCount = bufSize + (stopS2D - startS2D) + (fileLen - stopS2D);
     int s2dFrameCount = bufSize + (stopS2D - startS2D) + (bufSize);
-    REQUIRE(cap.get(cv::CAP_PROP_FRAME_COUNT) == Approx(s2dFrameCount - 2).epsilon(0.01));
+    REQUIRE(cap.get(cv::CAP_PROP_FRAME_COUNT) == Approx(s2dFrameCount).epsilon(0.02));
+    std::cout << "1st pass - frames in video file: " << cap.get(cv::CAP_PROP_FRAME_COUNT) << std::endl;
+    cap.release();
+
+    /*
+    // ------------------------------------------------------------------------
+    // 2nd pass
+    for (int count = 0; count < fileLen; ++count) {
+        std::cout << std::endl << "pass: " << count << std::endl;
+
+        if (count >= startS2D && !buf.isSaveToDiskRunning())
+            buf.setSaveToDisk(true);
+
+        if (count >= stopS2D)
+            buf.setSaveToDisk(false);
+
+        vcs.read(frame);
+        buf.pushToBuffer(frame);
+    }
+    // wait for post buffer to finish
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // release necessary to finish post buffer and close video file
+    buf.releaseBuffer();
+
+    // re-read file
+    std::string videoFile2nd = videoDir + '/' + buf.getVideoFileName();
+    cap.open(videoFile2nd);
+    REQUIRE(cap.isOpened() == true);
+
+    // save2disk frame count = pre-buffer + activeMotion + post-buffer
+    // int s2dFrameCount = bufSize + (stopS2D - startS2D) + (fileLen - stopS2D);
+    s2dFrameCount = bufSize + (stopS2D - startS2D) + (bufSize);
+    REQUIRE(cap.get(cv::CAP_PROP_FRAME_COUNT) == Approx(s2dFrameCount).epsilon(0.02));
+    std::cout << "2nd pass - frames in video file: " << cap.get(cv::CAP_PROP_FRAME_COUNT) << std::endl;
+    cap.release();
+    */
+
 }
 
 // clean up
