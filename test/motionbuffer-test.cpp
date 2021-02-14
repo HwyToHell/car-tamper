@@ -123,7 +123,7 @@ TEST_CASE("TAM-18 buffer size verification", "[MotionBuffer][TAM-18]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        REQUIRE(frmCounts.size() == minBufSize + 1);
+        REQUIRE(frmCounts.size() == minBufSize + 2);
     }
 
     SECTION("preBufferSize in range") {
@@ -136,8 +136,8 @@ TEST_CASE("TAM-18 buffer size verification", "[MotionBuffer][TAM-18]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // bufferSize + 1 frames logged (if frame rate is sufficiently low)
-        REQUIRE(frmCounts.size() == bufSizeInRange + 1);
+        // bufferSize + 3 frames logged (if frame rate is sufficiently low)
+        REQUIRE(frmCounts.size() == bufSizeInRange + 3);
     }
 
     SECTION("preBufferSize above max, verify frame rate") {
@@ -151,7 +151,7 @@ TEST_CASE("TAM-18 buffer size verification", "[MotionBuffer][TAM-18]") {
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
         // bufferSize + 1 frames logged (if frame rate is sufficiently low)
-        REQUIRE(frmCounts.size() == maxBufSize + 1);
+        REQUIRE(frmCounts.size() == maxBufSize + 3);
 
         // TODO move monotonic and frame count verification to TAM-19
         // verify frame count increases monotonic
@@ -178,7 +178,10 @@ TEST_CASE("TAM-19 ring buffer", "[MotionBuffer][TAM-19]") {
     const size_t bufSize    = 30;
     const size_t fpsInput   = 30;
     const double fpsOutput  = 30;
-    const int    saveActive =  2; // saveToDisk must be active for at least two frames in order to generate log
+    // saveToDisk must be active for at least two frames in order to generate log
+    // in camera mode: saveToDisk must be active for at least three frames
+    //   to allow preBuffer to empty
+    const int    saveActive =  3;
 
     SECTION("videoFile input mode") {
         VideoCaptureSimu vcs(InputMode::videoFile, "160x120", fpsInput, false);
@@ -193,8 +196,11 @@ TEST_CASE("TAM-19 ring buffer", "[MotionBuffer][TAM-19]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // post frames written = bufferSize + 1 (if buffer sufficiently filled)
-        REQUIRE(frmCounts.size() == bufSize + 1);
+        // frames written = preBuffer + activeMotion + postBuffer
+        // in videoFile input mode:
+        //   could be more, if buffer has been filled while creating video file
+        //   especially happens during small activeMotion phase
+        REQUIRE(frmCounts.size() >= bufSize + bufSize);
 
         // verify frame count increases monotonic
         for (size_t n = 1; n < frmCounts.size(); ++n) {
@@ -211,7 +217,7 @@ TEST_CASE("TAM-19 ring buffer", "[MotionBuffer][TAM-19]") {
     SECTION("camera input mode") {
         VideoCaptureSimu vcs(InputMode::camera, "160x120", fpsInput, false);
         const int startFrame = bufSize;
-        const int overrun = 10;
+        const int overrun = saveActive + 1;
 
         LogFiles files = writeToDiskTest(vcs, bufSize, fpsOutput,
                                          startFrame,
@@ -221,8 +227,8 @@ TEST_CASE("TAM-19 ring buffer", "[MotionBuffer][TAM-19]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // post frames written = bufferSize + 1 (if buffer sufficiently filled)
-        REQUIRE(frmCounts.size() == bufSize + 1);
+        // frames written = preBuffer + activeMotion - 1
+        REQUIRE(frmCounts.size() == bufSize + saveActive - 1);
 
         // verify frame count increases monotonic
         for (size_t n = 1; n < frmCounts.size(); ++n) {
@@ -252,7 +258,7 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
     const size_t bufSize    = 30;
     const size_t fpsInput   = 30;
     const double fpsOutput  = 30;
-    const int    saveActive =  2; // saveToDisk must be active for at least two frames in order to generate log
+    const int    saveActive =  3; // saveToDisk must be active for at least two frames in order to generate log
     std::string  cwd        = cv::utils::fs::getcwd();
 
     SECTION("videoFile input mode") {
@@ -263,7 +269,7 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
             const int startFrame = bufSize;
 
             // many frames overrun, plenty of time to finish post buffer
-            const int largeOverrun = 200;
+            const int largeOverrun = 500;
 
             LogFiles files = writeToDiskTest(vcs, bufSize, fpsOutput,
                                              startFrame,
@@ -273,8 +279,11 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
             cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
             std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-            // post frames written = bufferSize + 1 (if buffer sufficiently filled)
-            REQUIRE(frmCounts.size() == bufSize + 1);
+            // frames written = preBuffer + activeMotion + postBuffer
+            // in videoFile input mode:
+            //   could be more, if buffer has been filled while creating video file
+            //   especially happens during small activeMotion phase
+            REQUIRE(frmCounts.size() >= bufSize + bufSize);
 
             // verify frame count increases monotonic
             for (size_t n = 1; n < frmCounts.size(); ++n) {
@@ -295,7 +304,8 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
             cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
             std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-            REQUIRE(frmCounts.size() == bufSize + 1);
+            // frames written = preBuffer + activeMotion + postBuffer - 1
+            REQUIRE(frmCounts.size() == bufSize + saveActive - 1);
 
             // verify frame count increases monotonic
             for (size_t n = 1; n < frmCounts.size(); ++n) {
@@ -325,11 +335,9 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
         VideoCaptureSimu vcs(InputMode::camera, "160x120", fpsInput, false);
 
         SECTION("buffer full when starting saveMotionToDisk, "
-                "sufficient new frames to empty buffer before destruction") {
+                "sufficient new frames to write post buffer before destruction") {
             const int startFrame = bufSize;
-
-            // for cam running at 30 fps an overrun of 10 frames is sufficient
-            const int overrun = 10;
+            const int overrun = saveActive + bufSize;
 
             LogFiles files = writeToDiskTest(vcs, bufSize, fpsOutput,
                                              startFrame,
@@ -339,8 +347,8 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
             cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
             std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-            // post frames written = bufferSize + 1 (if buffer sufficiently filled)
-            REQUIRE(frmCounts.size() == bufSize + 1);
+            // frames written = preBuffer + activeMotion + postBuffer - 2
+            REQUIRE(frmCounts.size() == bufSize + saveActive + bufSize - 2);
 
             // verify frame count increases monotonic
             for (size_t n = 1; n < frmCounts.size(); ++n) {
@@ -361,7 +369,7 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
             cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
             std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-            REQUIRE(frmCounts.size() == bufSize + 1);
+            REQUIRE(frmCounts.size() == bufSize + saveActive - 1);
 
             // verify frame count increases monotonic
             for (size_t n = 1; n < frmCounts.size(); ++n) {

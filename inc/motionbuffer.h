@@ -89,7 +89,7 @@ private:
     bool                    m_isLogging;
     bool                    m_isNewFile;
     bool                    m_isSaveToDiskRunning;
-    /* logger for frame count and timinge, used in unit test,
+    /* logger for frame count and timing, used in unit test,
      * enable with #define UNIT_TEST */
     LogFrame                m_logAtTest;
     std::mutex              m_mtxBufferAccess;

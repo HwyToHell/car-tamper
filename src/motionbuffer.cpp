@@ -358,8 +358,12 @@ void MotionBuffer::setPostBuffer(std::size_t nFrames) {
 
 void MotionBuffer::setSaveToDisk(bool value)
 {
-    std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-    m_setSaveToDisk = value;
+    // on rising and falling edge
+    if (m_setSaveToDisk != value) {
+        std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+        m_setSaveToDisk = value;
+        DEBUG(getTimeStampMs() << " " << __func__ << ", setSaveToDisk: " << m_setSaveToDisk << ", #" << __LINE__);
+    }
 }
 
 
@@ -468,8 +472,7 @@ void MotionBuffer::writeUntilBufferEmpty()
             m_remainingPostFrames = m_postBufferSize + bufferSize;
             std::stringstream ss;
             ss << "bufSize: " << bufferSize;
-            DEBUG(ss.str());
-            DEBUG(getTimeStampMs() << " " << __func__ << ", start writing post buffer, #" << __LINE__);
+            DEBUG(getTimeStampMs() << " " << __func__ << ss.str() << ", start writing post buffer, #" << __LINE__);
             break;
         }
 
