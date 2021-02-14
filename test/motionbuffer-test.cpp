@@ -394,7 +394,8 @@ TEST_CASE("TAM-16 write post buffer", "[MotionBuffer][TAM-16]") {
 // compare set fpsOutput of motionBuffer with read fps of output file
 // VideoCapture in camera mode
 void verifyFps (size_t bufSize, size_t fpsSource, double fpsOutSet, double fpsOutTest,
-                std::string frameSize) {
+                std::string frameSize)
+{
     VideoCaptureSimu vcs(InputMode::camera, frameSize, fpsSource);
     cv::VideoCapture cap;
 
@@ -424,7 +425,7 @@ void verifyFps (size_t bufSize, size_t fpsSource, double fpsOutSet, double fpsOu
 
 // verify properties of written video file such as
 // fps, frame order, frame size, output directory, file name
-TEST_CASE("TAM-20 constructor: fps", "[MotionBuffer][TAM-20]") {
+TEST_CASE("TAM-20 verify fps", "[MotionBuffer][TAM-20]") {
     const size_t sourceFps = 60;
 
     SECTION("smallest frame size") {
@@ -458,88 +459,69 @@ TEST_CASE("TAM-20 constructor: fps", "[MotionBuffer][TAM-20]") {
 
         verifyFps(bufferSize, sourceFps, fpsMax, fpsMax, largestFrame);
     }
-}
 
+} // TEST_CASE TAM-20 verify fps
+
+
+// process video file (simulated by VideoCaptureSimu)
+// returns number of frames in video file
+double processVideoFile(MotionBuffer &buf, size_t fps, int startS2D, int stopS2D, int fileLen)
+{
+    VideoCaptureSimu vcs(InputMode::videoFile, "320x240", fps, false);
+    cv::Mat frame;
+
+    for (int count = 0; count < fileLen; ++count) {
+        std::cout << std::endl << "pass: " << count << std::endl;
+
+        if (count >= startS2D && !buf.isSaveToDiskRunning())
+            buf.setSaveToDisk(true);
+
+        if (count >= stopS2D)
+            buf.setSaveToDisk(false);
+
+        vcs.read(frame);
+        buf.pushToBuffer(frame);
+    }
+
+    // wait for post buffer to finish
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // release necessary to finish post buffer and close video file
+    buf.releaseBuffer();
+
+    // re-read file
+    std::string videoFile = videoDir + '/' + buf.getVideoFileName();
+    std::cout << "video output: " << videoFile << std::endl;
+    cv::VideoCapture cap; // capture for re-reading generated video file
+    cap.open(videoFile);
+    REQUIRE(cap.isOpened() == true);
+
+    double frameCnt = cap.get(cv::CAP_PROP_FRAME_COUNT);
+    std::cout << "frames in video file: " << frameCnt << std::endl;
+    cap.release();
+    return frameCnt;
+}
 
 // read multiple video input files, use same buffer instance
 TEST_CASE("TAM-35 process multiple video files", "[MotionBuffer][TAM-35]") {
-    const size_t    fps         =  30;
-    const size_t    bufSize     =  30;
-    const int       startS2D    =  30;
-    const int       stopS2D     = 100;
-    const int       fileLen     = 135;
+    const size_t    fps             =  30;
+    const size_t    bufferSize      =  30;
+    const int       startSaveToDisk =  30;
+    const int       stopSaveToDisk  = 100;
+    const int       fileLenght      = 135;
 
-    VideoCaptureSimu vcs(InputMode::camera, "160x120", fps, false);
-    MotionBuffer buf(bufSize, fps, videoDir, logDir, isLogging);
-    cv::VideoCapture cap; // capture for re-reading generated video file
-    cv::Mat frame;
+    MotionBuffer buffer(bufferSize, fps, videoDir, logDir, isLogging);
 
-    // ------------------------------------------------------------------------
+    // save2disk frame count = pre-buffer + activeMotion + post-buffer
+    int frmCntCalc = bufferSize + (stopSaveToDisk - startSaveToDisk) + (bufferSize);
     // 1st pass
-    for (int count = 0; count < fileLen; ++count) {
-        std::cout << std::endl << "pass: " << count << std::endl;
-
-        if (count >= startS2D && !buf.isSaveToDiskRunning())
-            buf.setSaveToDisk(true);
-
-        if (count >= stopS2D)
-            buf.setSaveToDisk(false);
-
-        vcs.read(frame);
-        buf.pushToBuffer(frame);
-    }
-    // wait for post buffer to finish
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    // release necessary to finish post buffer and close video file
-    buf.releaseBuffer();
-
-    // re-read file
-    std::string videoFile1st = videoDir + '/' + buf.getVideoFileName();
-    std::cout << "video output: " << videoFile1st << std::endl;
-    cap.open(videoFile1st);
-    REQUIRE(cap.isOpened() == true);
-
-    // save2disk frame count = pre-buffer + activeMotion + post-buffer
-    // int s2dFrameCount = bufSize + (stopS2D - startS2D) + (fileLen - stopS2D);
-    int s2dFrameCount = bufSize + (stopS2D - startS2D) + (bufSize);
-    REQUIRE(cap.get(cv::CAP_PROP_FRAME_COUNT) == Approx(s2dFrameCount).epsilon(0.02));
-    std::cout << "1st pass - frames in video file: " << cap.get(cv::CAP_PROP_FRAME_COUNT) << std::endl;
-    cap.release();
-
-    /*
-    // ------------------------------------------------------------------------
+    double frameCount1st = processVideoFile(buffer, fps, startSaveToDisk, stopSaveToDisk, fileLenght);
+    REQUIRE(frameCount1st == Approx(frmCntCalc).epsilon(0.05));
     // 2nd pass
-    for (int count = 0; count < fileLen; ++count) {
-        std::cout << std::endl << "pass: " << count << std::endl;
+    double frameCount2nd = processVideoFile(buffer, fps, startSaveToDisk, stopSaveToDisk, fileLenght);
+    REQUIRE(frameCount2nd == Approx(frmCntCalc).epsilon(0.05));
 
-        if (count >= startS2D && !buf.isSaveToDiskRunning())
-            buf.setSaveToDisk(true);
+} // TEST_CASE TAM-35 process multiple video files
 
-        if (count >= stopS2D)
-            buf.setSaveToDisk(false);
-
-        vcs.read(frame);
-        buf.pushToBuffer(frame);
-    }
-    // wait for post buffer to finish
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    // release necessary to finish post buffer and close video file
-    buf.releaseBuffer();
-
-    // re-read file
-    std::string videoFile2nd = videoDir + '/' + buf.getVideoFileName();
-    cap.open(videoFile2nd);
-    REQUIRE(cap.isOpened() == true);
-
-    // save2disk frame count = pre-buffer + activeMotion + post-buffer
-    // int s2dFrameCount = bufSize + (stopS2D - startS2D) + (fileLen - stopS2D);
-    s2dFrameCount = bufSize + (stopS2D - startS2D) + (bufSize);
-    REQUIRE(cap.get(cv::CAP_PROP_FRAME_COUNT) == Approx(s2dFrameCount).epsilon(0.02));
-    std::cout << "2nd pass - frames in video file: " << cap.get(cv::CAP_PROP_FRAME_COUNT) << std::endl;
-    cap.release();
-    */
-
-}
 
 // clean up
 TEST_CASE("TAM-31 delete temporary files", "[MotionBuffer][TearDown]") {
