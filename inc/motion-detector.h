@@ -18,8 +18,7 @@ class MotionDetector
 public:
     MotionDetector();
     bool        enableSaveToDisk(MotionBuffer& buffer);
-    int         get(MotionMinimal parameter); // TODO delete
-    cv::Mat     getMotionFrame();
+    cv::Mat     motionMask();
     bool        hasFrameMotion(cv::Mat frame);
 
     /* area in per cent of frame area */
@@ -29,12 +28,11 @@ public:
     /* duration as number of update steps */
     void        minMotionDuration(int value);
     int         minMotionDuration();
+    void        resetBackground();
 
     /* region of interest related to upper left corner */
     void        roi(cv::Rect);
     cv::Rect    roi();
-
-    bool        set(MotionMinimal parameter, int value); // TODO delete
     int         updateMotionDuration(bool isMotion);
 
     // TODO get and set

@@ -24,22 +24,7 @@ bool MotionDetector::enableSaveToDisk(MotionBuffer& buffer)
 }
 
 
-int MotionDetector::get(MotionMinimal parameter)
-{
-    int value = 0;
-    switch (parameter) {
-    case MotionMinimal::intensity:
-        value = m_minMotionIntensity;
-        break;
-    case MotionMinimal::duration:
-        value = m_minMotionDuration;
-        break;
-    }
-    return value;
-}
-
-
-cv::Mat MotionDetector::getMotionFrame()
+cv::Mat MotionDetector::motionMask()
 {
     return m_motionMask;
 }
@@ -100,25 +85,6 @@ void MotionDetector::roi(cv::Rect value)
 cv::Rect MotionDetector::roi()
 {
     return m_roi;
-}
-
-
-bool MotionDetector::set(MotionMinimal parameter, int value)
-{
-    // boundary validation of input 0 ... 100
-    value = value > 100 ? 100 : value;
-    value = value < 0 ? 0 : value;
-
-    switch (parameter) {
-    case MotionMinimal::intensity:
-        m_minMotionIntensity = value;
-        break;
-    case MotionMinimal::duration:
-        m_minMotionDuration = value;
-        break;
-    }
-
-    return true;
 }
 
 

@@ -24,7 +24,7 @@ void printParams(cv::VideoCapture& vidCap) {
 
 // test cv::VideoCapture (read from web cam), get and set parameters,
 // write video with cv::VideoWriter
-int main(int argc, char *argv[])
+int main_cap_get_set(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;

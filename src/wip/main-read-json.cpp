@@ -2,7 +2,7 @@
 #include "../inc/backgroundsubtraction.h"
 #include "../inc/motionbuffer.h"
 #include "../inc/time-stamp.h"
-#include "../car-tamper-test/inc/video-capture-simu.h"
+#include "../inc/video-capture-simu.h"
 
 // opencv
 #include <opencv2/opencv.hpp>
@@ -52,23 +52,30 @@ std::vector<int> getBufferSamples(cv::FileStorage fs, std::string key) {
 
 
 // test MotionBuffer saveToDisk
-int main_read_Json(int argc, char *argv[]) {
-    QApplication a(argc, argv);
+int main_read_json(int argc, char *argv[]) {
+    //QApplication a(argc, argv);
     using namespace std;
 
+    /*
     QString paramFile = QFileDialog::getOpenFileName(nullptr,
          "Select json file",
          QDir::currentPath(),
         "Video files (*.json)" );
     std::string file(paramFile.toUtf8());
     cout << file << endl;
+    */
+    //std::string file = "log/2021-02-07_19h17m41s514ms.json";
+    std::string file = "log/2021-02-08_21h29m34s57ms.json";
 
+    /*
     cv::FileStorage fs;
-    fs.open(file, cv::FileStorage::Mode::read);
+    fs.open(file, cv::FileStorage::Mode::READ);
     if (!fs.isOpened()) {
         cout << "file storage not open"<< endl;
         return -1;
     }
+    */
+    cv::FileStorage fs(file, cv::FileStorage::Mode::READ);
 
     // starting from root file node step down to other nodes
     cv::FileNode node = fs.root();

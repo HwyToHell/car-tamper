@@ -30,6 +30,7 @@ SOURCES += \
     ../src/time-stamp.cpp \
     ../src/video-capture-simu.cpp \
     main-test-cases.cpp \
+    motion-detector-test.cpp \
     motionbuffer-test.cpp \
     vid-cap-simu-test.cpp
 
