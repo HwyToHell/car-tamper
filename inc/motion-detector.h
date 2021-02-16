@@ -17,9 +17,9 @@ class MotionDetector
 {
 public:
     MotionDetector();
-    bool        enableSaveToDisk(MotionBuffer& buffer);
     cv::Mat     motionMask();
     bool        hasFrameMotion(cv::Mat frame);
+    bool        isContinuousMotion(cv::Mat frame);
 
     /* area in per cent of frame area */
     void        minMotionIntensity(int value);
@@ -28,19 +28,19 @@ public:
     /* duration as number of update steps */
     void        minMotionDuration(int value);
     int         minMotionDuration();
+    int         motionDuration();
     void        resetBackground();
 
     /* region of interest related to upper left corner */
     void        roi(cv::Rect);
     cv::Rect    roi();
-    int         updateMotionDuration(bool isMotion);
 
-    // TODO get and set
-    // foreRun, overRun (Vor- und Nachlauf in Anzahl Frames)
+    // TODO
     // reset backgroundsubtractor
 private:
+    cv::Mat     clipFrame(cv::Mat frame, cv::Rect roi);
     cv::Ptr<BackgroundSubtractorLowPass> m_bgrSub;
-    bool        m_isSaveToDiskEnabled;
+    bool        m_isContinuousMotion;
     int         m_minMotionDuration;
     int         m_minMotionIntensity;
     int         m_motionDuration;

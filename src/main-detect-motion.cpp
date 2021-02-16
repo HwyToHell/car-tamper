@@ -37,18 +37,24 @@ int main(int argc, char *argv[]) {
     return 0;
     */
 
-    const size_t bufSize = 30;
-    const size_t fps = 30;
-    VideoCaptureSimu cap(InputMode::camera, "640x480", fps);
+    const size_t bufSize = 10;
+    const size_t fps = 10;
+    VideoCaptureSimu vcs(InputMode::camera, "640x480", fps);
     MotionBuffer mb(bufSize, fps, "video", "log");
 
     MotionDetector mdet;
     cv::Mat frame;
+    vcs.read(frame);
+    cv::Size frameSize = frame.size();
+    cv::Rect roi(cv::Point(0,0), frameSize);
+    cout << "roi: " << roi << endl;
+    mdet.roi(roi);
 
     //cap.setMode(30, 50);
 
     int cnt = 0;
-    while (cap.read(frame)) {
+    bool isSaveToDisk = false;
+    while (vcs.read(frame)) {
         ++cnt;
 
 
@@ -57,33 +63,46 @@ int main(int argc, char *argv[]) {
         if (cnt % static_cast<int>(fps) == 0) {
             int greyScale = cnt / static_cast<int>(fps) % 10 * 10;
             cout << "grey scale: " << greyScale << endl;
-            cap.setMode(30, greyScale, true);
+            vcs.setMode(30, greyScale, true);
         }
         */
 
 
         mb.pushToBuffer(frame);
-        bool isMotion = mdet.hasFrameMotion(frame);
-        int duration = mdet.updateMotionDuration(isMotion);
-        bool isSaveToDisk = mdet.enableSaveToDisk(mb);
-        cout << "----------------------------------------------------------------------" << endl;
-        cout << "pass: " << cnt << " | frame has motion: " << isMotion;
-        cout <<  " | motion duration: " << duration << " | save to disk: " << isSaveToDisk << endl;
-        cout << "----------------------------------------------------------------------" << endl;
+        int duration = mdet.motionDuration();
+        bool isMotion = mdet.isContinuousMotion(frame);
+
+
+        if (isMotion) {
+            if (!mb.isSaveToDiskRunning()) {
+                mb.setSaveToDisk(true);
+                isSaveToDisk = true;
+            }
+        } else {
+            mb.setSaveToDisk(false);
+            isSaveToDisk = false;
+        }
+
+
+
+        cout << "----------------------------------------------------------------------------" << endl;
+        cout << "pass: " << cnt << " motion: " << isMotion <<  " | motion duration: ";
+        cout << duration << " | setS2D: " << isSaveToDisk << " | isS2DRunning: " << mb.isSaveToDiskRunning() << endl;
+        cout << "-----------------------------------------------------------------------------" << endl;
 
         //   0: write frames w/o motion
         //  30: enable vid-cap motion ->     40: saveToDisk activated
         //  70: disable vid-cap motion ->    80: saveToDisk de-activated
         // 100: stop vid-cap
-        if (cnt == 40) {
-            cap.setMode(GenMode::motionAreaAndTime, 10, 50);
+        if (cnt == 20) {
+            vcs.setMode(GenMode::motionAreaAndTime, 10, 50);
         }
-        if (cnt == 80) {
+        if (cnt == 40) {
             // TODO vid cap -> setTimeStampMode
             // or setMode timeStamp, motionArea, motionAreaAndTime
-            cap.setMode(GenMode::timeStamp);
+            vcs.setMode(GenMode::timeStamp);
         }
-        if (cnt == 100)
+        if (cnt == 80)
             break;
 
 
@@ -95,7 +114,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    cap.release();
+    vcs.release();
     cout << endl;
     cout << "finished" << endl;
     return 0;
