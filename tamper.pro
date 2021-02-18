@@ -28,6 +28,7 @@ LIBS += -lopencv_core \
         -lopencv_video \
         -lopencv_videoio
 LIBS += -lv4l2 -lv4l1
+LIBS += -lstdc++fs
 
 HEADERS += \
     inc/backgroundsubtraction.h \
@@ -39,8 +40,8 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
-    src/main-cap-get-set.cpp \
     src/main-detect-motion.cpp \
+    src/main-time-from-filename.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
     src/time-stamp.cpp \

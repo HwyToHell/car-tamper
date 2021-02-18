@@ -4,18 +4,28 @@ MotionDetector::MotionDetector() :
     m_isContinuousMotion{false},
     m_minMotionDuration{10},    // number of consecutive frames with motion
     m_minMotionIntensity{100},  // number of pixels with motion
-    m_motionDuration{0}
+    m_motionDuration{0},
+    m_threshold{50}
 {
-    // default -> alpha: 0.005 threshold: 40
+    // default -> alpha: 0.005 threshold: 50
     m_bgrSub = createBackgroundSubtractorLowPass(0.005, 50);
 
 }
 
 
-// clipFrame
-cv::Mat clipFrame(cv::Mat frame, cv::Rect roi)
+void MotionDetector::bgrSubThreshold(double threshold)
 {
-    return frame(roi);
+    /* limit between 0 an 100 */
+    threshold = threshold > 300 ? 300 : threshold;
+    threshold = threshold < 0 ? 0 : threshold;
+    m_threshold = threshold;
+    m_bgrSub->threshold(m_threshold);
+}
+
+
+double MotionDetector::bgrSubThreshold() const
+{
+    return m_threshold;
 }
 
 
@@ -71,7 +81,7 @@ void MotionDetector::minMotionDuration(int value)
 }
 
 
-int MotionDetector::minMotionDuration()
+int MotionDetector::minMotionDuration() const
 {
     return m_minMotionDuration;
 }
@@ -86,19 +96,19 @@ void MotionDetector::minMotionIntensity(int value)
 }
 
 
-int MotionDetector::minMotionIntensity()
+int MotionDetector::minMotionIntensity() const
 {
     return m_minMotionIntensity;
 }
 
 
-int MotionDetector::motionDuration()
+int MotionDetector::motionDuration() const
 {
     return m_motionDuration;
 }
 
 
-cv::Mat MotionDetector::motionMask()
+cv::Mat MotionDetector::motionMask() const
 {
     return m_motionMask;
 }
@@ -110,7 +120,7 @@ void MotionDetector::roi(cv::Rect value)
 }
 
 
-cv::Rect MotionDetector::roi()
+cv::Rect MotionDetector::roi() const
 {
     return m_roi;
 }

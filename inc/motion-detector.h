@@ -17,28 +17,31 @@ class MotionDetector
 {
 public:
     MotionDetector();
-    cv::Mat     motionMask();
+
+    /* background subtractor: theshold of frame difference */
+    void        bgrSubThreshold(double threshold);
+    double      bgrSubThreshold() const;
     bool        hasFrameMotion(cv::Mat frame);
     bool        isContinuousMotion(cv::Mat frame);
 
     /* area in per cent of frame area */
     void        minMotionIntensity(int value);
-    int         minMotionIntensity();
+    int         minMotionIntensity() const;
 
     /* duration as number of update steps */
     void        minMotionDuration(int value);
-    int         minMotionDuration();
-    int         motionDuration();
+    int         minMotionDuration() const;
+    int         motionDuration() const;
+    cv::Mat     motionMask() const;
     void        resetBackground();
 
     /* region of interest related to upper left corner */
     void        roi(cv::Rect);
-    cv::Rect    roi();
+    cv::Rect    roi() const;
 
     // TODO
     // reset backgroundsubtractor
 private:
-    cv::Mat     clipFrame(cv::Mat frame, cv::Rect roi);
     cv::Ptr<BackgroundSubtractorLowPass> m_bgrSub;
     bool        m_isContinuousMotion;
     int         m_minMotionDuration;
@@ -46,7 +49,7 @@ private:
     int         m_motionDuration;
     cv::Mat     m_motionMask;
     cv::Rect    m_roi;
-
+    double      m_threshold;
 };
 
 #endif // MOTIONDETECTOR_H
