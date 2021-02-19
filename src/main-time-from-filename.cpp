@@ -15,8 +15,11 @@
 #include <QString>
 
 // std
+#include <ctime>
 #include <experimental/filesystem>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 
@@ -38,6 +41,35 @@ int main(int argc, char *argv[]) {
     fs::path videoPath(videoPathName);
     // fs::path videoPath("/home/holger/app-dev/print-file-tree.txt");
     cout << videoPath.filename() << endl;
+    std::stringstream ss(videoPath.filename());
+
+    std::tm t;
+    ss >> std::get_time(&t, "%Y-%m-%d_%Hh%Mm%Ss");
+
+    if (ss.fail()) {
+        cout << "parse failed" << endl;
+    } else {
+        cout << std::put_time(&t, "%c") << endl;
+    }
+
+    cv::VideoCapture cap(videoPathName);
+    if (!cap.isOpened()) {
+        cout << "cannot open video file" << endl;
+        return -1;
+    }
+
+    double fps = cap.get(cv::CAP_PROP_FPS);
+    double frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+    double min = frames / fps / 60;
+
+    cout << "fps:    " << fps << "\n"
+         << "frames: " << frames << "\n"
+         << "min:    " << min << endl;
+
+    videoPath.remove_filename();
+    for (auto entry : fs::directory_iterator(videoPath)) {
+        cout << entry.path() << endl;
+    }
 
 
     return 0;
