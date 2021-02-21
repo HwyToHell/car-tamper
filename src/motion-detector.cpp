@@ -29,6 +29,8 @@ double MotionDetector::bgrSubThreshold() const
 
 bool MotionDetector::hasFrameMotion(cv::Mat frame)
 {
+    // TODO if roi(0,0) --> roi = frame.size()
+
     // pre-processing of clipped frame
     cv::Mat processedFrame;
     cv::blur(frame(m_roi), processedFrame, cv::Size(10,10));
