@@ -1,84 +1,44 @@
 #include "../inc/motion-detector.h"
 
 MotionDetector::MotionDetector() :
-    m_isSaveToDiskEnabled{false},
+    m_isContinuousMotion{false},
     m_minMotionDuration{10},    // number of consecutive frames with motion
-    m_minMotionIntensitiy{100}  // number of pixels with motion
+    m_minMotionIntensity{100},  // number of pixels with motion
+    m_motionDuration{0}
 {
-    // default -> alpha: 0.005 threshold: 40
+    // default -> alpha: 0.005 threshold: 50
     m_bgrSub = createBackgroundSubtractorLowPass(0.005, 50);
 
 }
 
 
-bool MotionDetector::enableSaveToDisk(MotionBuffer& buffer)
+void MotionDetector::bgrSubThreshold(double threshold)
 {
-    if (m_motionDuration >= m_minMotionDuration
-            && !buffer.isSaveToDiskRunning()) {
-        m_isSaveToDiskEnabled = true;
-    } else if (m_motionDuration == 0) {
-        m_isSaveToDiskEnabled = false;
-    }
-    buffer.setSaveToDisk(m_isSaveToDiskEnabled);
-    return m_isSaveToDiskEnabled;
+    /* limit between 0 an 100 */
+    threshold = threshold > 100 ? 100 : threshold;
+    threshold = threshold < 0 ? 0 : threshold;
+    m_bgrSub->threshold(threshold);
 }
 
 
-int MotionDetector::get(MotionMinimal parameter)
+double MotionDetector::bgrSubThreshold() const
 {
-    int value = 0;
-    switch (parameter) {
-    case MotionMinimal::intensity:
-        value = m_minMotionIntensitiy;
-        break;
-    case MotionMinimal::duration:
-        value = m_minMotionDuration;
-        break;
-    }
-    return value;
-}
-
-
-cv::Mat MotionDetector::getMotionFrame()
-{
-    return m_motionMask;
+    return m_bgrSub->threshold();
 }
 
 
 bool MotionDetector::hasFrameMotion(cv::Mat frame)
 {
-    // pre-processing
+    // pre-processing of clipped frame
     cv::Mat processedFrame;
-    cv::blur(frame, processedFrame, cv::Size(10,10));
+    cv::blur(frame(m_roi), processedFrame, cv::Size(10,10));
 
     // detect motion in current frame
     m_bgrSub->apply(processedFrame, m_motionMask);
     int motionIntensity = cv::countNonZero(m_motionMask);
-    return motionIntensity > m_minMotionIntensitiy ? true : false;
-}
+    bool isMotion = motionIntensity > m_minMotionIntensity ? true : false;
 
-
-bool MotionDetector::set(MotionMinimal parameter, int value)
-{
-    // boundary validation of input 0 ... 100
-    value = value > 100 ? 100 : value;
-    value = value < 0 ? 0 : value;
-
-    switch (parameter) {
-    case MotionMinimal::intensity:
-        m_minMotionIntensitiy = value;
-        break;
-    case MotionMinimal::duration:
-        m_minMotionDuration = value;
-        break;
-    }
-
-    return true;
-}
-
-
-int MotionDetector::updateMotionDuration(bool isMotion) {
-    /* limit motion duration */
+    // update motion duration
     // motion increase by 1
     if (isMotion) {
         ++m_motionDuration;
@@ -92,5 +52,73 @@ int MotionDetector::updateMotionDuration(bool isMotion) {
                 ? 0 : m_motionDuration;
     }
 
+    return isMotion;
+}
+
+
+bool MotionDetector::isContinuousMotion(cv::Mat frame)
+{
+    hasFrameMotion(frame);
+
+    if (m_motionDuration >= m_minMotionDuration) {
+        m_isContinuousMotion = true;
+    } else if (m_motionDuration == 0) {
+        m_isContinuousMotion = false;
+    }
+
+    return m_isContinuousMotion;
+}
+
+
+void MotionDetector::minMotionDuration(int value)
+{
+    /* allow 300 update steps at max */
+    value = value > 300 ? 300 : value;
+    value = value < 0 ? 0 : value;
+    m_minMotionDuration = value;
+}
+
+
+int MotionDetector::minMotionDuration() const
+{
+    return m_minMotionDuration;
+}
+
+
+void MotionDetector::minMotionIntensity(int value)
+{
+    /* per cent of frame area */
+    value = value > 100 ? 100 : value;
+    value = value < 0 ? 0 : value;
+    m_minMotionIntensity = value;
+}
+
+
+int MotionDetector::minMotionIntensity() const
+{
+    return m_minMotionIntensity;
+}
+
+
+int MotionDetector::motionDuration() const
+{
     return m_motionDuration;
+}
+
+
+cv::Mat MotionDetector::motionMask() const
+{
+    return m_motionMask;
+}
+
+
+void MotionDetector::roi(cv::Rect value)
+{
+    m_roi = value;
+}
+
+
+cv::Rect MotionDetector::roi() const
+{
+    return m_roi;
 }

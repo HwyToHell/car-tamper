@@ -57,3 +57,8 @@ long elapsedMs(std::chrono::system_clock::time_point startTimePoint) {
     std::chrono::system_clock::time_point endTimePiont = std::chrono::system_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(endTimePiont - startTimePoint).count();
 }
+
+long elapsedMicroSec(std::chrono::system_clock::time_point startTimePoint) {
+    std::chrono::system_clock::time_point endTimePiont = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(endTimePiont - startTimePoint).count();
+}

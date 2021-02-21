@@ -5,6 +5,10 @@ QT -= gui
 CONFIG += c++14 console
 CONFIG -= app_bundle
 
+#define DEBUG_BUILD in debug mode only
+CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
+#message($$DEFINES)
+
 INCLUDEPATH += $$(HOME)/app-dev/catch/catch_2.8.0
 #message(catch dir: $$INCLUDEPATH)
 
@@ -17,15 +21,20 @@ LIBS += -lopencv_core \
 LIBS += -lv4l2 -lv4l1
 
 HEADERS += \
+    ../inc/backgroundsubtraction.h \
+    ../inc/motion-detector.h \
     ../inc/motionbuffer.h \
     ../inc/time-stamp.h \
     ../inc/video-capture-simu.h
 
 SOURCES += \
+    ../src/backgroundsubtraction.cpp \
+    ../src/motion-detector.cpp \
     ../src/motionbuffer.cpp \
     ../src/time-stamp.cpp \
     ../src/video-capture-simu.cpp \
     main-test-cases.cpp \
+    motion-detector-test.cpp \
     motionbuffer-test.cpp \
     vid-cap-simu-test.cpp
 

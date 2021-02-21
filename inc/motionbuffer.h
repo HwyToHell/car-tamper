@@ -51,7 +51,8 @@ class MotionBuffer
 public:
     MotionBuffer(std::size_t preBufferSize, double fpsOutput,
                  std::string videoDir       = "videos",
-                 std::string logDirForTest  = "log");
+                 std::string logDir         = "log",
+                 bool        logging        = false);
     ~MotionBuffer();
     std::string getLogFileRelPath();
     std::string getVideoFileName();
@@ -70,11 +71,12 @@ public:
                     writeActiveMotion,
                     writePostBuffer
                 };
+    void        toStateCreate();
     std::string waitForVideoFile();
 private:
     void                    saveMotionToDisk();
-    void                    writeUntilBufferEmpty(cv::VideoWriter& vidWriter);
-    bool                    postBufferFinished(cv::VideoWriter& vidWriter);
+    void                    writeUntilBufferEmpty();
+    bool                    isPostBufferFinished();
     bool                    m_setSaveToDisk;
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;
@@ -84,9 +86,10 @@ private:
     int                     m_frameCount;
     cv::Size                m_frameSize;
     bool                    m_isBufferAccessible;
+    bool                    m_isLogging;
     bool                    m_isNewFile;
     bool                    m_isSaveToDiskRunning;
-    /* logger for frame count and timinge, used in unit test,
+    /* logger for frame count and timing, used in unit test,
      * enable with #define UNIT_TEST */
     LogFrame                m_logAtTest;
     std::mutex              m_mtxBufferAccess;
@@ -102,6 +105,7 @@ private:
     std::thread             m_threadSaveToDisk;
     std::string             m_videoSubDir;
     std::string             m_videoFileName;
+    cv::VideoWriter         m_videoWriter;
 };
 
 

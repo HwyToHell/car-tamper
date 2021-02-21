@@ -1,7 +1,7 @@
 // project specific
 #include "../inc/motionbuffer.h"
 #include "../inc/backgroundsubtraction.h"
-#include "../car-tamper-test/inc/video-capture-simu.h"
+#include "../inc/video-capture-simu.h"
 
 // opencv
 #include <opencv2/opencv.hpp>
@@ -24,7 +24,7 @@ void printParams(cv::VideoCapture& vidCap) {
 
 // test cv::VideoCapture (read from web cam), get and set parameters,
 // write video with cv::VideoWriter
-int main_write(int argc, char *argv[])
+int main_cap_get_set(int argc, char *argv[])
 {
     (void)argc; (void)argv;
     using namespace std;
@@ -45,28 +45,16 @@ int main_write(int argc, char *argv[])
     cout << "height:  " << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << endl;
     */
 
-    size_t fps = 10;
-    VideoCaptureSimu cap(fps);
+    size_t fps = 60;
+    VideoCaptureSimu cap(InputMode::videoFile, "160x120", fps, false);
+    cout << "get:  " << cap.get(cv::CAP_PROP_MODE) << endl;
+    cout << "cast: " << static_cast<double>(InputMode::videoFile) << endl;
 
-    MotionBuffer buf(5, cap.get(cv::CAP_PROP_FPS));
+
     cv::Mat frame;
     int cnt = 0;
-    //cv::VideoCapture cap(0);
 
-    /*
-    cv::VideoWriter videoWriter;
-    std::string filename = getTimeStamp(TimeResolution::sec) + ".avi";
-    int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
-
-    int width = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
-    int height = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
-    cout << width << "x" << height << endl;
-
-    if(!videoWriter.open(filename, fourcc, fps, cv::Size(width,height) )) {
-        std::cout << "cannot open file: " << filename << std::endl;
-    }
-    */
-
+    MotionBuffer buf(30, fps, "videos", "log", true);
 
     while (cap.read(frame)) {
         ++cnt;
@@ -78,30 +66,40 @@ int main_write(int argc, char *argv[])
         // test buffer functions
         cout << endl << "frame: " << cnt << endl;
 
-
         buf.pushToBuffer(frame);
 
-        if (cnt > 10) {
+
+        if (cnt >= 40 && cnt <= 41) {
+            //cap.setMode(GenMode::motionAreaAndTime, 50, 30);
             buf.setSaveToDisk(true);
         }
 
-        if (cnt > 20) {
+        if (cnt >= 70 && cnt <= 71) {
+            //cap.setMode(GenMode::motionAreaAndTime, 50, 80);
             buf.setSaveToDisk(false);
         }
 
-        if (cnt > 25) break;
+        if (cnt >= 110) {
+            break;
+        }
+
 
 
         if (cv::waitKey(10) == 27) {
             cout << "esc -> end video processing" << endl;
             break;
         }
+
+
     }
+    std::string videoFileName = buf.getVideoFileName();
+    cout << "videoFileName: " << videoFileName << endl;
+    cout << "end reading frames " << endl;
 
     //buf.printBuffer();
 
     // videoWriter.release();
-    cap.release();
+    //cap.release();
     return 0;
 
 }

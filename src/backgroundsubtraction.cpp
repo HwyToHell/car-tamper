@@ -10,15 +10,18 @@ cv::Ptr<BackgroundSubtractorLowPass> createBackgroundSubtractorLowPass(double al
 BackgroundSubtractorLowPass::BackgroundSubtractorLowPass(double alpha, double threshold) : 
 	m_alpha(alpha), 
 	m_isInitialized(false),
-	m_threshold(threshold) {
+    m_threshold(threshold)
+{
 }
 
 
-BackgroundSubtractorLowPass::~BackgroundSubtractorLowPass() {
+BackgroundSubtractorLowPass::~BackgroundSubtractorLowPass()
+{
 }
 
 
-void BackgroundSubtractorLowPass::apply(cv::InputArray image, cv::OutputArray fgmask, double learningRate) {
+void BackgroundSubtractorLowPass::apply(cv::InputArray image, cv::OutputArray fgmask, double learningRate)
+{
     std::ignore = learningRate;
 	// fill accu when applying for first time
 	if (!m_isInitialized) {
@@ -40,7 +43,20 @@ void BackgroundSubtractorLowPass::apply(cv::InputArray image, cv::OutputArray fg
 }
 
 
-void BackgroundSubtractorLowPass::getBackgroundImage(cv::OutputArray backgroundImage) const {
+void BackgroundSubtractorLowPass::getBackgroundImage(cv::OutputArray backgroundImage) const
+{
 	m_accu.convertTo(backgroundImage, CV_8U);
 	return;
+}
+
+
+double BackgroundSubtractorLowPass::threshold() const
+{
+    return m_threshold;
+}
+
+
+void BackgroundSubtractorLowPass::threshold(double threshold)
+{
+    m_threshold = threshold;
 }

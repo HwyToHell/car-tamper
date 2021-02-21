@@ -17,7 +17,7 @@ DEFINES -= LOG_AT_TEST
 CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
 #CONFIG(debug, debug|release):message(Debug build)
 #CONFIG(release, debug|release):message(Release build)
-# message("defines: "$$DEFINES)
+#message("defines: "$$DEFINES)
 
 
 
@@ -28,6 +28,7 @@ LIBS += -lopencv_core \
         -lopencv_video \
         -lopencv_videoio
 LIBS += -lv4l2 -lv4l1
+LIBS += -lstdc++fs
 
 HEADERS += \
     inc/backgroundsubtraction.h \
@@ -39,8 +40,8 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
-    src/main-analyze-video.cpp \
-    src/main-flicker.cpp \
+    src/main-detect-motion.cpp \
+    src/main-time-from-filename.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
     src/time-stamp.cpp \

@@ -9,6 +9,8 @@ public:
 	~BackgroundSubtractorLowPass();
 	virtual void apply(cv::InputArray image, cv::OutputArray fgmask, double learningRate=-1);
 	virtual void getBackgroundImage(cv::OutputArray backgroundImage) const;
+    double       threshold() const;
+    void         threshold(double threshold);
 private:
 	cv::Mat	m_accu;
 	double	m_alpha;
