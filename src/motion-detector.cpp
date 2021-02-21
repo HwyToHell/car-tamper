@@ -4,8 +4,7 @@ MotionDetector::MotionDetector() :
     m_isContinuousMotion{false},
     m_minMotionDuration{10},    // number of consecutive frames with motion
     m_minMotionIntensity{100},  // number of pixels with motion
-    m_motionDuration{0},
-    m_threshold{50}
+    m_motionDuration{0}
 {
     // default -> alpha: 0.005 threshold: 50
     m_bgrSub = createBackgroundSubtractorLowPass(0.005, 50);
@@ -16,16 +15,15 @@ MotionDetector::MotionDetector() :
 void MotionDetector::bgrSubThreshold(double threshold)
 {
     /* limit between 0 an 100 */
-    threshold = threshold > 300 ? 300 : threshold;
+    threshold = threshold > 100 ? 100 : threshold;
     threshold = threshold < 0 ? 0 : threshold;
-    m_threshold = threshold;
-    m_bgrSub->threshold(m_threshold);
+    m_bgrSub->threshold(threshold);
 }
 
 
 double MotionDetector::bgrSubThreshold() const
 {
-    return m_threshold;
+    return m_bgrSub->threshold();
 }
 
 

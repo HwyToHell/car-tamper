@@ -21,11 +21,15 @@ LIBS += -lopencv_core \
 LIBS += -lv4l2 -lv4l1
 
 HEADERS += \
+    ../inc/backgroundsubtraction.h \
+    ../inc/motion-detector.h \
     ../inc/motionbuffer.h \
     ../inc/time-stamp.h \
     ../inc/video-capture-simu.h
 
 SOURCES += \
+    ../src/backgroundsubtraction.cpp \
+    ../src/motion-detector.cpp \
     ../src/motionbuffer.cpp \
     ../src/time-stamp.cpp \
     ../src/video-capture-simu.cpp \
