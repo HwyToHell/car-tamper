@@ -92,9 +92,20 @@ TEST_CASE("TAM-17 set / get parameters", "[MotionDetector][TAM-17]") {
     }
 
     SECTION("roi") {
-        const cv::Rect roi(0,0,640,480);
-        det.roi(roi);
-        REQUIRE(det.roi() == roi);
+        SECTION("roi not initialized -> use full frame when reading first one") {
+            const int width = 640;
+            const int height = 480;
+            const cv::Rect fullFrame(0, 0, width, height);
+            cv::Mat frame(height, width, CV_8U) ;
+            REQUIRE(det.roi() == cv::Rect(0, 0, 0, 0));
+            det.hasFrameMotion(frame);
+            REQUIRE(det.roi() == fullFrame);
+        }
+        SECTION("set an get roi") {
+            const cv::Rect roi(0,0,640,480);
+            det.roi(roi);
+            REQUIRE(det.roi() == roi);
+        }
     }
 } // TEST_CASE TAM-17 set / get
 
@@ -125,7 +136,6 @@ TEST_CASE("TAM-37 isContinuousMotion", "[MotionDetector][TAM-37]") {
     det.minMotionDuration(minMotionDuration);
     det.minMotionIntensity(minMotionIntensity);
 
-    bool isSaveToDisk = false;
     cv::Mat frame;
     for (int count = 0; count < stopReadingCam; ++count) {
         vcs.read(frame);
@@ -135,11 +145,9 @@ TEST_CASE("TAM-37 isContinuousMotion", "[MotionDetector][TAM-37]") {
         if (isMotion) {
             if (!buf.isSaveToDiskRunning()) {
                 buf.setSaveToDisk(true);
-                isSaveToDisk = true;
             }
         } else {
             buf.setSaveToDisk(false);
-            isSaveToDisk = false;
         }
 
         if (count == startMotion) {
@@ -169,5 +177,13 @@ TEST_CASE("TAM-37 isContinuousMotion", "[MotionDetector][TAM-37]") {
     REQUIRE(frmCounts.size() == motionFrames);
 
 } // TEST_CASE TAM-37 isContinuousMotion
+
+// clean up
+TEST_CASE("delete temporary files", "[MotionDetector][TearDown]") {
+    std::string cwd = cv::utils::fs::getcwd();
+    cv::utils::fs::remove_all(cwd + "/" + logDir);
+    cv::utils::fs::remove_all(cwd + "/" + videoDir);
+    std::cout << "temp dirs cleaned up" << std::endl;
+}
 
 

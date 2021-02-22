@@ -4,7 +4,8 @@ MotionDetector::MotionDetector() :
     m_isContinuousMotion{false},
     m_minMotionDuration{10},    // number of consecutive frames with motion
     m_minMotionIntensity{100},  // number of pixels with motion
-    m_motionDuration{0}
+    m_motionDuration{0},
+    m_roi{0,0,0,0}
 {
     // default -> alpha: 0.005 threshold: 50
     m_bgrSub = createBackgroundSubtractorLowPass(0.005, 50);
@@ -29,7 +30,9 @@ double MotionDetector::bgrSubThreshold() const
 
 bool MotionDetector::hasFrameMotion(cv::Mat frame)
 {
-    // TODO if roi(0,0) --> roi = frame.size()
+    // use full frame size, if roi is not initialized yet
+    if (m_roi == cv::Rect(0,0,0,0))
+        m_roi = cv::Rect(cv::Point(0,0), frame.size());
 
     // pre-processing of clipped frame
     cv::Mat processedFrame;
