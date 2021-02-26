@@ -21,7 +21,7 @@
 
 
 // test MotionBuffer saveToDisk by using video capture simulation
-int main_detect_motion(int argc, char *argv[]) {
+int main_detect_motion_cam(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
 

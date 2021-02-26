@@ -1,10 +1,10 @@
 #include "../inc/motionbuffer.h"
-#include "../inc/time-stamp.h"
 
 
 
 /* LogFrame ******************************************************************/
-LogFrame::LogFrame(std::string subDir) {
+LogFrame::LogFrame(std::string subDir)
+{
     std::string logDir = cv::utils::fs::getcwd();
 
     if (!subDir.empty()) {
@@ -28,18 +28,21 @@ LogFrame::LogFrame(std::string subDir) {
 }
 
 
-LogFrame::~LogFrame() {
+LogFrame::~LogFrame()
+{
     close();
 }
 
 
-void LogFrame::close() {
+void LogFrame::close()
+{
     if (m_logFile.isOpened())
         m_logFile.release();
 }
 
 
-bool LogFrame::create(std::string fileName) {
+bool LogFrame::create(std::string fileName)
+{
 
     if (fileName.empty()) {
         fileName = getTimeStamp(TimeResolution::ms_NoBlank);
@@ -57,12 +60,14 @@ bool LogFrame::create(std::string fileName) {
 }
 
 
-std::string LogFrame::getLogFileRelPath() {
+std::string LogFrame::getLogFileRelPath()
+{
     return (m_logSubDir + m_logFileName);
 }
 
 
-void LogFrame::write(cv::Mat frame) {
+void LogFrame::write(cv::Mat frame)
+{
     int rows = frame.rows;
     std::string timeStampAsKey = "_" + getTimeStamp(TimeResolution::micSec_NoBlank);
     m_logFile << timeStampAsKey;
@@ -74,28 +79,31 @@ void LogFrame::write(cv::Mat frame) {
 
 
 /* MotionBuffer **************************************************************/
-MotionBuffer::MotionBuffer(std::size_t preBufferSize, double fpsOutput,
+MotionBuffer::MotionBuffer(std::size_t preBufferSize,
+                           double      fps,
                            std::string videoDir,
                            std::string logDir,
-                           bool logging) :
-    m_setSaveToDisk{false},
-    m_fps{fpsOutput},
+                           bool        logging,
+                           bool        timeFromFile) :
+    m_frameCount{0},
     /* current frame size set in pushToBuffer */
     m_frameSize{cv::Size(0,0)},
     m_isBufferAccessible{false},
     m_isLogging{logging},
     m_isNewFile{false},
     m_isSaveToDiskRunning{false},
+    m_isTimeFromFile{timeFromFile},
     m_logAtTest{logDir},
     /* keep postBuffer the same size of preBuffer, potential source of error */
     m_postBufferSize{1},
     m_preBufferSize{1},
     m_saveToDiskState{State::createVideoFile},
+    m_setSaveToDisk{false},
     m_terminate{false}
 {
-    setPreBuffer(preBufferSize);
-    setPostBuffer(preBufferSize);
-    setFpsOutput(fpsOutput);
+    preBuffer(preBufferSize);
+    postBuffer(preBufferSize);
+    fpsOutput(fps);
     setVideoDir(videoDir);
 
     m_threadSaveToDisk = std::thread(&MotionBuffer::saveMotionToDisk, this);
@@ -120,6 +128,26 @@ MotionBuffer::~MotionBuffer()
     }
     assert(!m_threadSaveToDisk.joinable());
     DEBUG(getTimeStampMs() << " " << __func__ << ", finished, #" << __LINE__);
+}
+
+
+void MotionBuffer::fpsOutput(double fps)
+{
+    /* limit frames per second for output video in order to
+     * observe reasonable motion (min: 1)
+     * avoid processor ressource shortage (max: 60) */
+    m_fps = fps;
+    if (m_fps < 1) {
+        m_fps = 1;
+    } else if (m_fps > 60) {
+        m_fps = 60;
+    }
+}
+
+
+double MotionBuffer::fpsOutput() const
+{
+    return m_fps;
 }
 
 
@@ -190,6 +218,51 @@ bool MotionBuffer::isPostBufferFinished()
 }
 
 
+void MotionBuffer::preBuffer(std::size_t nFrames)
+{
+    /* limit preBufferSize in order to have saveToDisk algo work properly (min: 2)
+     * avoid heap memory shortage (max: 60) */
+    m_preBufferSize = nFrames;
+    if (m_preBufferSize < 2) {
+        m_preBufferSize = 2;
+        std::cout << "pre buffer too small, set to minimum size of "
+                  << m_preBufferSize << std::endl;
+    } else if (m_preBufferSize > 60) {
+        m_preBufferSize = 60;
+        std::cout << "pre buffer too large, set to minimum size of "
+                  << m_preBufferSize << std::endl;
+    }
+}
+
+
+size_t MotionBuffer::preBuffer() const
+{
+    return m_preBufferSize;
+}
+
+
+void MotionBuffer::postBuffer(size_t nFrames)
+{
+    /* limit postBufferSize to same values as preBuffer */
+    m_postBufferSize = nFrames;
+    if (m_postBufferSize < 2) {
+        m_postBufferSize = 2;
+        std::cout << "post buffer too small, set to minimum size of "
+                  << m_postBufferSize << std::endl;
+    } else if (m_postBufferSize > 60) {
+        m_postBufferSize = 60;
+        std::cout << "post buffer too large, set to minimum size of "
+                  << m_postBufferSize << std::endl;
+    }
+}
+
+
+size_t MotionBuffer::postBuffer() const
+{
+    return m_postBufferSize;
+}
+
+
 void MotionBuffer::pushToBuffer(cv::Mat& frame)
 {
     bool saveToDiskRunning = false;
@@ -198,6 +271,7 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame)
         std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
         saveToDiskRunning = m_isSaveToDiskRunning;
         setSaveToDisk = m_setSaveToDisk;
+        ++m_frameCount;
     }
 
     if (saveToDiskRunning) {
@@ -246,6 +320,7 @@ void MotionBuffer::releaseBuffer()
     {
         std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
         m_setSaveToDisk = false;
+        m_frameCount = 0;
     }
 }
 
@@ -286,7 +361,9 @@ void MotionBuffer::saveMotionToDisk()
         /* open new video file for writing */
         case State::createVideoFile:
         {
-            m_videoFileName = getTimeStamp(TimeResolution::sec_NoBlank) + ".avi";
+            std::cout << "-----------------------------------------------------------------------------\n"
+                        << "cnt: " << m_frameCount << ", offs: " << m_frameCount*m_fps << " ms, bufSize: " << m_buffer.size() << std::endl;
+            m_videoFileName = timeStamp() + ".avi";
             std::string fileNameRel = m_videoSubDir + m_videoFileName;
             int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
             assert(m_frameSize != cv::Size(0,0));
@@ -333,29 +410,6 @@ void MotionBuffer::saveMotionToDisk()
 }
 
 
-void MotionBuffer::setPreBuffer(std::size_t nFrames) {
-    /* limit preBufferSize in order to have saveToDisk algo work properly (min: 1)
-     * avoid heap memory shortage (max: 60) */
-    m_preBufferSize = nFrames;
-    if (m_preBufferSize < 1) {
-        m_preBufferSize = 1;
-    } else if (m_preBufferSize > 60) {
-        m_preBufferSize = 60;
-    }
-}
-
-
-void MotionBuffer::setPostBuffer(std::size_t nFrames) {
-    /* limit postBufferSize to same values as preBuffer */
-    m_postBufferSize = nFrames;
-    if (m_postBufferSize < 1) {
-        m_postBufferSize = 1;
-    } else if (m_postBufferSize > 60) {
-        m_postBufferSize = 60;
-    }
-}
-
-
 void MotionBuffer::setSaveToDisk(bool value)
 {
     // on rising and falling edge
@@ -364,6 +418,27 @@ void MotionBuffer::setSaveToDisk(bool value)
         m_setSaveToDisk = value;
         DEBUG(getTimeStampMs() << " " << __func__ << ", setSaveToDisk: " << m_setSaveToDisk << ", #" << __LINE__);
     }
+}
+
+
+void MotionBuffer::startTime(std::tm time)
+{
+    // tm -> time_t, time_t -> chrono
+    // add milliseconds in timeStamp
+    time_t epochTime = mktime(&time);
+    m_startTime = std::chrono::system_clock::from_time_t(epochTime);
+
+    // reset frame counter
+    {
+        std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+        m_frameCount = 0;
+    }
+}
+
+
+time_t MotionBuffer::startTime() const
+{
+    return std::chrono::system_clock::to_time_t(m_startTime);
 }
 
 
@@ -393,18 +468,24 @@ bool MotionBuffer::setVideoDir(std::string subDir)
 }
 
 
-void MotionBuffer::setFpsOutput(double fps) {
-    /* limit frames per second for output video in order to
-     * observe reasonable motion (min: 1)
-     * avoid processor ressource shortage (max: 60) */
-    m_fps = fps;
-    if (m_fps < 1) {
-        m_fps = 1;
-    } else if (m_fps > 60) {
-        m_fps = 60;
+std::string MotionBuffer::timeStamp()
+{
+    // from file: add offset to start time of video file
+    if (m_isTimeFromFile) {
+        int offsetMs = 0;
+        {
+            std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+            offsetMs = static_cast<int>(m_fps * m_frameCount);
+        }
+        auto offset = std::chrono::milliseconds(offsetMs);
+        auto currentTimePoint = m_startTime + offset;
+        return getTimeStamp(TimeResolution::sec_NoBlank, currentTimePoint);
+    }
+    // from cam: use current time
+    else {
+        return getTimeStamp(TimeResolution::sec_NoBlank);
     }
 }
-
 
 
 void MotionBuffer::toStateCreate() {
@@ -478,7 +559,3 @@ void MotionBuffer::writeUntilBufferEmpty()
 
     } /* while write frames until buffer emptied */
 }
-
-
-/* Functions *****************************************************************/
-

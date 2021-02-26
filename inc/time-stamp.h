@@ -6,7 +6,11 @@
 
 enum class TimeResolution {ms, sec, micSec_NoBlank, ms_NoBlank, sec_NoBlank};
 
-std::string getTimeStamp(TimeResolution resolution);
+typedef std::chrono::time_point<std::chrono::system_clock> TimePoint;
+
+
+std::string getTimeStamp(TimeResolution resolution,
+                         TimePoint currentTime = TimePoint()); // default = 0
 
 inline std::string getTimeStampMs() {
     return getTimeStamp(TimeResolution::ms);

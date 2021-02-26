@@ -14,7 +14,7 @@ DEFINES -= DEBUG_BUILD
 DEFINES -= LOG_AT_TEST
 
 
-CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
+#CONFIG(debug, debug|release):DEFINES += DEBUG_BUILD
 #CONFIG(debug, debug|release):message(Debug build)
 #CONFIG(release, debug|release):message(Release build)
 #message("defines: "$$DEFINES)
@@ -40,7 +40,8 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
-    src/main-detect-motion.cpp \
+    src/main-detect-motion-cam.cpp \
+    src/main-detect-motion-file.cpp \
     src/main-time-from-filename.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \

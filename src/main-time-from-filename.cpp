@@ -15,17 +15,19 @@
 #include <QString>
 
 // std
+#include <chrono>
 #include <ctime>
 #include <experimental/filesystem>
 #include <iomanip>
 #include <iostream>
+#include <ratio>
 #include <sstream>
 #include <string>
 
 
 
 // test MotionBuffer saveToDisk by using video capture simulation
-int main(int argc, char *argv[]) {
+int main_time_from_filename(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
     namespace fs = std::experimental::filesystem;
@@ -70,6 +72,28 @@ int main(int argc, char *argv[]) {
     for (auto entry : fs::directory_iterator(videoPath)) {
         cout << entry.path() << endl;
     }
+
+    // convert tm to chrono::time_point
+    time_t epochTime = mktime(&t);
+    std::chrono::time_point<std::chrono::system_clock> startTime = std::chrono::system_clock::from_time_t(epochTime);
+    cout << "epoch time: " << epochTime << std::endl;
+
+    auto startTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(startTime.time_since_epoch()).count();
+    cout << "time point milli sec: " << startTimeMs << std::endl;
+
+    cout << "start time put_time: " << std::put_time(std::localtime(&epochTime), "%F %T") << endl;
+
+    auto offset = std::chrono::milliseconds(1055);
+    auto startTime1 = startTime + offset;
+    auto epochMs1 = std::chrono::duration_cast<std::chrono::milliseconds>(startTime1.time_since_epoch()).count();
+    cout << "time point milli sec: " << epochMs1 << std::endl;
+
+    // double rep ändert den return type von count() nach double
+    // dieser Typ erzeugt bei to_time_t einen Typfehler
+    auto offsetFloat = std::chrono::duration<double>(0.011);
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> startTime2 = startTime + offsetFloat;
+    auto epochMs2 = std::chrono::duration_cast<std::chrono::milliseconds>(startTime2.time_since_epoch()).count();
+    cout << "time point milli sec float: " << epochMs2 << std::endl;
 
 
     return 0;

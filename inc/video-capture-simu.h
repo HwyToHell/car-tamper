@@ -26,7 +26,7 @@ public:
     bool        read(cv::Mat& frame);
     bool        set(int propid, double value);
     bool        setMode(GenMode mode, int area = 0, int greyLevel = 0);
-    bool        setTimeStampMode();
+    bool        startTimeStampMode();
     void        release();
 private:
     void        generateFrame();
