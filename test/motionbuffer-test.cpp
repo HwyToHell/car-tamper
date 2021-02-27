@@ -473,7 +473,7 @@ TEST_CASE("TAM-20 verify fps", "[MotionBuffer][TAM-20]") {
 
 // process video file (simulated by VideoCaptureSimu)
 // returns number of frames in video file
-double processVideoFile(MotionBuffer &buf, size_t fps, int startS2D, int stopS2D, int fileLen)
+double framesOfMotionVideo(MotionBuffer &buf, size_t fps, int startS2D, int stopS2D, int fileLen)
 {
     VideoCaptureSimu vcs(InputMode::videoFile, "320x240", fps, false);
     cv::Mat frame;
@@ -522,13 +522,71 @@ TEST_CASE("TAM-35 process multiple video files", "[MotionBuffer][TAM-35]") {
     // save2disk frame count = pre-buffer + activeMotion + post-buffer
     int frmCntCalc = bufferSize + (stopSaveToDisk - startSaveToDisk) + (bufferSize);
     // 1st pass
-    double frameCount1st = processVideoFile(buffer, fps, startSaveToDisk, stopSaveToDisk, fileLenght);
+    double frameCount1st = framesOfMotionVideo(buffer, fps, startSaveToDisk, stopSaveToDisk, fileLenght);
     REQUIRE(frameCount1st == Approx(frmCntCalc).epsilon(0.05));
     // 2nd pass
-    double frameCount2nd = processVideoFile(buffer, fps, startSaveToDisk, stopSaveToDisk, fileLenght);
+    double frameCount2nd = framesOfMotionVideo(buffer, fps, startSaveToDisk, stopSaveToDisk, fileLenght);
     REQUIRE(frameCount2nd == Approx(frmCntCalc).epsilon(0.05));
 
 } // TEST_CASE TAM-35 process multiple video files
+
+
+// process video file (simulated by VideoCaptureSimu)
+// returns file name of motion video file
+std::string fileNameOfMotionVideo(MotionBuffer &buf, size_t fps, int startS2D, int stopS2D, int fileLen)
+{
+    VideoCaptureSimu vcs(InputMode::videoFile, "320x240", fps, false);
+    cv::Mat frame;
+
+    for (int count = 0; count < fileLen; ++count) {
+        std::cout << std::endl << "pass: " << count << std::endl;
+
+        if (count >= startS2D && !buf.isSaveToDiskRunning())
+            buf.setSaveToDisk(true);
+
+        if (count >= stopS2D)
+            buf.setSaveToDisk(false);
+
+        vcs.read(frame);
+        buf.pushToBuffer(frame);
+    }
+
+    // wait for post buffer to finish
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // release necessary to finish post buffer and close video file
+    buf.releaseBuffer();
+    return buf.getVideoFileName();
+}
+
+// verify time from videoFile input
+TEST_CASE("TAM-38 time from videoFile", "[MotionBuffer][TAM-38]") {
+    const bool      useTimeFromFile = true;
+    const time_t    startTime       =    0;
+    const size_t    bufferSize      =   30;
+    const size_t    fps             =   30;
+    const int       offsMotionSec   =    6;
+
+    int startSaveToDisk = offsMotionSec * static_cast<int>(fps);
+    int stopSaveToDisk  = startSaveToDisk + 10;
+    int stopReadingFile = stopSaveToDisk + 35;
+
+    MotionBuffer buffer(bufferSize, fps, videoDir, logDir, isLogging, useTimeFromFile);
+    std::tm* startTimeCal = std::localtime(&startTime);
+    buffer.startTime(*startTimeCal);
+
+    // re-read, whether start time has been set
+    REQUIRE(buffer.startTime() == startTime);
+
+    std::string fileName = fileNameOfMotionVideo(buffer, fps, startSaveToDisk, stopSaveToDisk, stopReadingFile);
+    std::cout << fileName << std::endl;
+    std::stringstream ss(fileName);
+    std::tm startTimeFromFile;
+    ss >> std::get_time(&startTimeFromFile, "%Y-%m-%d_%Hh%Mm%Ss");
+
+    // verify, if motion offset has been encoded in file name
+    REQUIRE(startTimeFromFile.tm_sec == offsMotionSec);
+
+} // TEST_CASE TAM-38 time from videoFile
 
 
 // clean up

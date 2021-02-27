@@ -40,6 +40,11 @@ int main(int argc, char *argv[]) {
     std::string videoPathName(videoFile.toUtf8());
     cout << videoPathName << endl;
 
+
+    time_t time = 0;
+    cout << put_time(localtime(&time), "%c") << endl;
+    return 0;
+
     fs::path videoPath(videoPathName);
     // fs::path videoPath("/home/holger/app-dev/print-file-tree.txt");
     cout << videoPath.filename() << endl;

@@ -178,6 +178,7 @@ TEST_CASE("TAM-37 isContinuousMotion", "[MotionDetector][TAM-37]") {
 
 } // TEST_CASE TAM-37 isContinuousMotion
 
+
 // clean up
 TEST_CASE("delete temporary files", "[MotionDetector][TearDown]") {
     std::string cwd = cv::utils::fs::getcwd();

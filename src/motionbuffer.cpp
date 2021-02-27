@@ -361,8 +361,6 @@ void MotionBuffer::saveMotionToDisk()
         /* open new video file for writing */
         case State::createVideoFile:
         {
-            std::cout << "-----------------------------------------------------------------------------\n"
-                        << "cnt: " << m_frameCount << ", offs: " << m_frameCount*m_fps << " ms, bufSize: " << m_buffer.size() << std::endl;
             m_videoFileName = timeStamp() + ".avi";
             std::string fileNameRel = m_videoSubDir + m_videoFileName;
             int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
@@ -475,7 +473,7 @@ std::string MotionBuffer::timeStamp()
         int offsetMs = 0;
         {
             std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-            offsetMs = static_cast<int>(m_fps * m_frameCount);
+            offsetMs = static_cast<int>(m_frameCount * 1000 / m_fps);
         }
         auto offset = std::chrono::milliseconds(offsetMs);
         auto currentTimePoint = m_startTime + offset;
