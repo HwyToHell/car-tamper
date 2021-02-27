@@ -73,7 +73,7 @@ LogFiles writeToDiskTest(VideoCaptureSimu& cap, size_t bufSize, double fpsOut,
     MotionBuffer buf(bufSize, fpsOut, videoDir, logDir, isLogging);
     cv::Mat frame;
     for (int count = 0; count < overrun; ++count) {
-        std::cout << std::endl << "pass: " << count << std::endl;
+        // std::cout << std::endl << "pass: " << count << std::endl;
 
         // buf = 1 (min value) -> first frame written = start+1
         if (count >= start && !buf.isSaveToDiskRunning())
@@ -85,12 +85,11 @@ LogFiles writeToDiskTest(VideoCaptureSimu& cap, size_t bufSize, double fpsOut,
             buf.setSaveToDisk(false);
 
         cap.read(frame);
-        std::cout << "frame read" << std::endl;
         buf.pushToBuffer(frame);
     }
 
     // wait for post buffer to finish
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     // release necessary to finish post buffer and close video file
     buf.releaseBuffer();
 
@@ -123,7 +122,8 @@ TEST_CASE("TAM-18 buffer size verification", "[MotionBuffer][TAM-18]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        REQUIRE(frmCounts.size() == minBufSize + 2);
+        // for min buf size one additional frame logged
+        REQUIRE(frmCounts.size() == minBufSize + 3 + 1);
     }
 
     SECTION("preBufferSize in range") {
@@ -136,7 +136,9 @@ TEST_CASE("TAM-18 buffer size verification", "[MotionBuffer][TAM-18]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // bufferSize + 3 frames logged (if frame rate is sufficiently low)
+        // bufferSize + 3 frames logged (also valid for videoFile input mode)
+        // 2 = min buf size                                         -> 2 frames
+        // 1 additional pass after notification of save2Disk thread -> 1 frame
         REQUIRE(frmCounts.size() == bufSizeInRange + 3);
     }
 
@@ -150,25 +152,8 @@ TEST_CASE("TAM-18 buffer size verification", "[MotionBuffer][TAM-18]") {
         cv::FileStorage fs(files.logFileRelPath, cv::FileStorage::Mode::READ);
         std::vector<int> frmCounts = getBufferSamples(fs, "frame count");
 
-        // bufferSize + 1 frames logged (if frame rate is sufficiently low)
+        // bufferSize + 3 frames logged
         REQUIRE(frmCounts.size() == maxBufSize + 3);
-
-        // TODO move monotonic and frame count verification to TAM-19
-        // verify frame count increases monotonic
-        for (size_t n = 1; n < frmCounts.size(); ++n) {
-            REQUIRE((frmCounts[n] - frmCounts[n-1]) > 0);
-        }
-
-        // verify frame rate matches specification and stays the same
-        std::vector<int> timeStamps = getBufferSamples(fs, "time stamp");
-        double frameTimePrev = static_cast<double>(timeStamps[1] - timeStamps[0]);
-        for (size_t n = 2; n < timeStamps.size(); ++n) {
-            double frameTime = static_cast<double>(timeStamps[n] - timeStamps[n-1]);
-            REQUIRE(frameTime == Approx(1000 / fps).epsilon(0.1));
-            std::cout << "frame rate: " << frameTime << std::endl;
-            REQUIRE(frameTimePrev == Approx(frameTime).epsilon(0.1));
-            frameTimePrev = frameTime;
-        }
     }
 }
 
@@ -241,7 +226,6 @@ TEST_CASE("TAM-19 ring buffer", "[MotionBuffer][TAM-19]") {
         for (size_t n = 2; n < timeStamps.size(); ++n) {
             double frameTime = static_cast<double>(timeStamps[n] - timeStamps[n-1]);
             REQUIRE(frameTime == Approx(1000 / fpsInput).epsilon(0.1));
-            std::cout << "camera input mode frame time: " << frameTime << std::endl;
             REQUIRE(frameTimePrev == Approx(frameTime).epsilon(0.1));
             frameTimePrev = frameTime;
         }
@@ -479,7 +463,7 @@ double framesOfMotionVideo(MotionBuffer &buf, size_t fps, int startS2D, int stop
     cv::Mat frame;
 
     for (int count = 0; count < fileLen; ++count) {
-        std::cout << std::endl << "pass: " << count << std::endl;
+        // std::cout << std::endl << "pass: " << count << std::endl;
 
         if (count >= startS2D && !buf.isSaveToDiskRunning())
             buf.setSaveToDisk(true);
@@ -539,7 +523,7 @@ std::string fileNameOfMotionVideo(MotionBuffer &buf, size_t fps, int startS2D, i
     cv::Mat frame;
 
     for (int count = 0; count < fileLen; ++count) {
-        std::cout << std::endl << "pass: " << count << std::endl;
+        // std::cout << std::endl << "pass: " << count << std::endl;
 
         if (count >= startS2D && !buf.isSaveToDiskRunning())
             buf.setSaveToDisk(true);

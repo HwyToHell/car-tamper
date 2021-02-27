@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     (void)argc;
     using namespace std;
 
-    string cases("[MotionBuffer][TAM-38]"); // run single test case
+    string cases("[MotionBuffer]");
     //string cases("[MotionDetector][TearDown]"); // run single test case
     //string cases("[MotionBuffer],[TearDown]"); // run all test cases + tear down
 
