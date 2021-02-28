@@ -27,7 +27,7 @@
 
 
 // test MotionBuffer saveToDisk by using video capture simulation
-int main(int argc, char *argv[]) {
+int main_detect_motion_file(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
     namespace fs = std::experimental::filesystem;
