@@ -81,10 +81,14 @@ Error analyzeMotion(Params params, std::string fileName)
 
     // parse time from file name
     std::stringstream ss(videoPath.filename());
-    std::tm time;
-    ss >> std::get_time(&time, "%Y-%m-%d_%Hh%Mm%Ss");
+    std::tm startTime;
+    ss >> std::get_time(&startTime, "%Y-%m-%d_%Hh%Mm%Ss");
     if (ss.fail())
         return Error::ParseTime;
+
+    // output dir
+    std::stringstream outDirectory;
+    outDirectory << std::put_time(&startTime, "%F_%Hh%Mm%Ss");
 
     // get fps and frame count of video file
     cv::VideoCapture cap;
@@ -97,17 +101,20 @@ Error analyzeMotion(Params params, std::string fileName)
     // analyze file
     MotionBuffer buffer(params.buffer.pre,
                         fps,
-                        params.buffer.videoDir,
+                        outDirectory.str(),
                         "log",
                         false,
                         true);
     buffer.postBuffer(params.buffer.post);
+    buffer.startTime(startTime);
 
     MotionDetector detector;
     detector.bgrSubThreshold(params.detector.bgrSubThreshold);
     detector.minMotionDuration(params.detector.minMotionDuration);
     detector.minMotionIntensity(params.detector.minMotionIntensity);
     detector.roi(params.detector.roi);
+
+    std::cout << fileName << std::endl;
 
     int frameCount = 0;
     cv::Mat frame;
@@ -124,7 +131,7 @@ Error analyzeMotion(Params params, std::string fileName)
             buffer.setSaveToDisk(false);
         }
         // progress in per cent
-        if (frameCount % 100 == 0) {
+        if (frameCount % 30 == 0) {
             std::cout << (frameCount * 100 / totalFrames) << "%\r";
             std::cout.flush();
         }
@@ -144,7 +151,22 @@ Error analyzeMotion(Params params, std::string fileName)
 // TODO: params mit passenden Werten initialisieren
 int main(int argc, char *argv[])  {
 
-    Error error = analyzeMotion(Params{}, "2020-11-06_16h22m43s.mp4");
+    Params params;
+    params.buffer.fps = 30;
+    params.buffer.pre = 30;
+    params.buffer.post = 30;
+    params.buffer.videoDir = "videos";
+    params.detector.roi = cv::Rect(0,0,0,0);
+    params.detector.bgrSubThreshold = 50;
+    params.detector.minMotionDuration = 10;
+    params.detector.minMotionIntensity = 10;
+
+    if (argc < 2) {
+        std::cout << "usage: tamper filename" << std::endl;
+        return -1;
+    }
+
+    Error error = analyzeMotion(params, argv[1]);
     std::cout << std::endl;
 
     if (error == Error::OK)
