@@ -10,8 +10,11 @@
 
 // qt
 #include <QApplication>
+#include <QDebug>
 #include <QDir>
 #include <QFileDialog>
+#include <QSettings>
+#include <QStandardPaths>
 #include <QString>
 
 // std
@@ -65,10 +68,67 @@ struct ParamMotionDetector
 
 struct Params
 {
-    Params() {}
+    Params();
+    ~Params();
     ParamMotionBuffer   buffer;
     ParamMotionDetector detector;
+    void                loadSettings();
+    void                saveSettings();
 };
+
+
+Params::Params()
+{
+    loadSettings();
+}
+
+
+Params::~Params()
+{
+    std::cout << "d'tor save settings" << std::endl;
+    saveSettings();
+}
+
+
+void Params::loadSettings()
+{
+    QSettings settings;
+
+    settings.beginGroup("MotionBuffer");
+    buffer.fps = settings.value("fps", 30).toDouble();
+    buffer.pre = static_cast<size_t>(settings.value("preBuffer", 30).toInt());
+    buffer.post = static_cast<size_t>(settings.value("postBuffer", 10).toInt());
+    buffer.videoDir = settings.value("videoDir", "videos").toString().toStdString();
+    settings.endGroup();
+
+    settings.beginGroup("MotionDetector");
+    detector.bgrSubThreshold = settings.value("bgrSubThreshold", 50).toDouble();
+    detector.minMotionDuration = settings.value("minMotionDuration", 10).toInt();
+    detector.minMotionIntensity = settings.value("minMotionIntensity", 10).toInt();
+    QRect qRoi = settings.value("roi", QRect(0,0,0,0)).toRect();
+    detector.roi = cv::Rect(qRoi.x(), qRoi.y(), qRoi.width(),qRoi.height());
+    settings.endGroup();
+}
+
+void Params::saveSettings()
+{
+    QSettings settings;
+
+    settings.beginGroup("MotionBuffer");
+    settings.setValue("fps", buffer.fps);
+    settings.setValue("preBuffer", static_cast<int>(buffer.pre));
+    settings.setValue("postBuffer", static_cast<int>(buffer.post));
+    settings.setValue("videoDir", QString::fromStdString(buffer.videoDir));
+    settings.endGroup();
+
+    settings.beginGroup("MotionDetector");
+    settings.setValue("bgrSubThreshold", detector.bgrSubThreshold);
+    settings.setValue("minMotionDuration", detector.minMotionDuration);
+    settings.setValue("minMotionIntensity", detector.minMotionIntensity);
+    QRect qRoi(detector.roi.x, detector.roi.y, detector.roi.width, detector.roi.height);
+    settings.setValue("roi", qRoi);
+    settings.endGroup();
+}
 
 
 Error analyzeMotion(Params params, std::string fileName)
@@ -150,16 +210,30 @@ Error analyzeMotion(Params params, std::string fileName)
 
 // TODO: params mit passenden Werten initialisieren
 int main(int argc, char *argv[])  {
-
+    QApplication a(argc, argv);
+    QApplication::setOrganizationName("grzonka");
     Params params;
-    params.buffer.fps = 30;
-    params.buffer.pre = 30;
-    params.buffer.post = 30;
-    params.buffer.videoDir = "videos";
-    params.detector.roi = cv::Rect(0,0,0,0);
-    params.detector.bgrSubThreshold = 50;
-    params.detector.minMotionDuration = 10;
-    params.detector.minMotionIntensity = 10;
+    std::cout << "roi: " << params.detector.roi << std::endl;
+
+    /*
+    qDebug() << "appName: " << a.applicationName();
+    qDebug() << "orgName: " << a.organizationName();
+    qDebug() << "config: " << QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    qDebug() << "file: " << settings.fileName();
+    */
+
+    //a.applicationName();
+    return 0;
+
+
+    QString videoFile = QFileDialog::getOpenFileName(nullptr,
+         "Select video file",
+         QDir::currentPath(),
+        "Video files (*.avi *.mp4)" );
+    std::string videoPathName(videoFile.toUtf8());
+    std::cout << videoPathName << std::endl;
+
+
 
     if (argc < 2) {
         std::cout << "usage: tamper filename" << std::endl;
