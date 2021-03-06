@@ -10,8 +10,10 @@
 
 // qt
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QDebug>
 #include <QDir>
+#include <QDirIterator>
 #include <QFileDialog>
 #include <QSettings>
 #include <QStandardPaths>
@@ -85,7 +87,7 @@ Params::Params()
 
 Params::~Params()
 {
-    std::cout << "d'tor save settings" << std::endl;
+    //std::cout << "d'tor save settings" << std::endl;
     saveSettings();
 }
 
@@ -181,7 +183,6 @@ Error analyzeMotion(Params params, std::string fileName)
     while (cap.read(frame)) {
         ++frameCount;
         buffer.pushToBuffer(frame);
-        detector.motionDuration();
         bool isMotion = detector.isContinuousMotion(frame);
         if (isMotion) {
             if (!buffer.isSaveToDiskRunning()) {
@@ -196,6 +197,8 @@ Error analyzeMotion(Params params, std::string fileName)
             std::cout.flush();
         }
     }
+    std::cout << (frameCount * 100 / totalFrames) << "%\r";
+    std::cout.flush();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     buffer.releaseBuffer();
     cap.release();
@@ -207,46 +210,108 @@ Error analyzeMotion(Params params, std::string fileName)
 }
 
 
+std::vector<std::string> getVideoFiles(QString path)
+{
+    std::vector<std::string> videoFiles;
+    QDirIterator it(path, {"*.mp4", "*.wav"}, QDir::Files);
+    while (it.hasNext()) {
+        it.next();
+        std::string file = it.fileName().toStdString();
+        videoFiles.push_back(file);
+    }
+    return videoFiles;
+}
+
+
+std::vector<std::string> getVideoFilesFromArgs(QStringList args)
+{
+    std::vector<std::string> videoFiles;
+    for(auto arg: args) {
+        if (arg.endsWith(".avi") || arg.endsWith(".mp4")) {
+            videoFiles.push_back(arg.toStdString());
+        }
+    }
+    return videoFiles;
+}
+
+bool showRoi(std::string videoFile, cv::Rect roi)
+{
+    cv::VideoCapture cap;
+    cap.open(videoFile);
+    if (!cap.isOpened())
+        return false;
+    cv::Mat frame;
+    if (!cap.read(frame))
+        return false;
+
+    std::cout << "frame size: " << frame.size() << ", roi: " << roi << std::endl;
+    cv::rectangle(frame, roi, cv::Scalar(0,0,255), 2);
+    cv::imshow("region for motion processing", frame);
+    std::cout << "press any key to close preview" << std::endl;
+    cv::waitKey(0);
+    cv::destroyWindow("region for motion processing");
+    return true;
+}
+
+
+bool waitForEnter() {
+    using namespace std;
+    cout << endl << "Press <enter> to exit" << endl;
+    string str;
+    getline(cin, str);
+    return true;
+}
+
 
 // TODO: params mit passenden Werten initialisieren
 int main(int argc, char *argv[])  {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
     Params params;
-    std::cout << "roi: " << params.detector.roi << std::endl;
 
-    /*
-    qDebug() << "appName: " << a.applicationName();
-    qDebug() << "orgName: " << a.organizationName();
-    qDebug() << "config: " << QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
-    qDebug() << "file: " << settings.fileName();
-    */
+    // parse command line args
+    QCommandLineParser cmdLine;
+    cmdLine.setApplicationDescription("Extract motion sequences of videoFile to separate files");
+    cmdLine.addHelpOption();
+    cmdLine.addPositionalArgument("videoFile", "Process single video file");
+    cmdLine.addPositionalArgument("*", "Process all video files in current directory");
+    cmdLine.addPositionalArgument("", "Select directory with video files");
 
-    //a.applicationName();
-    return 0;
+    cmdLine.process(a);
+    const QStringList posArgs = cmdLine.positionalArguments();
 
+    std::vector<std::string> videoFiles;
+    // take video files from command line
+    if (posArgs.size() > 0) {
+        videoFiles = getVideoFilesFromArgs(posArgs);
 
-    QString videoFile = QFileDialog::getOpenFileName(nullptr,
-         "Select video file",
-         QDir::currentPath(),
-        "Video files (*.avi *.mp4)" );
-    std::string videoPathName(videoFile.toUtf8());
-    std::cout << videoPathName << std::endl;
-
-
-
-    if (argc < 2) {
-        std::cout << "usage: tamper filename" << std::endl;
-        return -1;
+    // select directory and extract all video files
+    } else {
+        QString videoPath = QFileDialog::getExistingDirectory(nullptr,
+                        "Select Directory",
+                        QDir::currentPath(),
+                        QFileDialog::ShowDirsOnly);
+        videoFiles = getVideoFiles(videoPath);
+        for (auto file : videoFiles) {
+            std::cout << file << std::endl;
+        }
     }
 
-    Error error = analyzeMotion(params, argv[1]);
-    std::cout << std::endl;
+    std::cout << videoFiles.size() << " video files selected for processing" << std::endl;
+    for (auto file: videoFiles) {
+        showRoi(file, params.detector.roi);
+        Error error = analyzeMotion(params, file);
+        std::cout << std::endl;
 
-    if (error == Error::OK)
-        std::cout << "successful" << std::endl;
-    else {
-        std::cout << errorMsg.find(error)->second << std::endl;
+        if (error == Error::OK)
+            std::cout << "successful" << std::endl;
+        else {
+            std::cout << errorMsg.find(error)->second << std::endl;
+        }
     }
+
+
+
+    waitForEnter();
     return 0;
 }
