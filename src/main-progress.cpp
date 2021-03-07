@@ -5,7 +5,7 @@
 #include "../inc/time-stamp.h"
 #include "../inc/video-capture-simu.h"
 
-// color cursor
+// console colors
 #include "../cpp/inc/rlutil.h"
 
 // opencv
@@ -24,7 +24,6 @@
 
 // std
 #include <chrono>
-#include <cstdlib> // getenv
 #include <ctime>
 #include <experimental/filesystem>
 #include <iomanip>
@@ -33,7 +32,6 @@
 #include <sstream>
 #include <string>
 #include <thread>
-
 
 enum class Error
 {
@@ -138,13 +136,6 @@ void Params::saveSettings()
 }
 
 
-void printProgress(std::string file, int progress)
-{
-    std::cout << file << "  " << progress << "%\r";
-    std::cout.flush();
-}
-
-
 Error analyzeMotion(Params params, std::string fileName)
 {
     // file exists
@@ -155,9 +146,7 @@ Error analyzeMotion(Params params, std::string fileName)
 
     // parse time from file name
     std::stringstream ss(videoPath.filename());
-    time_t zeroDay = std::time(nullptr);
-    // setting time zone
-    std::tm startTime = *std::localtime(&zeroDay);
+    std::tm startTime;
     ss >> std::get_time(&startTime, "%Y-%m-%d_%Hh%Mm%Ss");
     if (ss.fail())
         return Error::ParseTime;
@@ -190,10 +179,10 @@ Error analyzeMotion(Params params, std::string fileName)
     detector.minMotionIntensity(params.detector.minMotionIntensity);
     detector.roi(params.detector.roi);
 
+    std::cout << fileName << std::endl;
+
     int frameCount = 0;
-    int progress = 0;
     cv::Mat frame;
-    rlutil::CursorHider hide;
     while (cap.read(frame)) {
         ++frameCount;
         buffer.pushToBuffer(frame);
@@ -206,29 +195,21 @@ Error analyzeMotion(Params params, std::string fileName)
             buffer.setSaveToDisk(false);
         }
         // progress in per cent
-        if (frameCount % 10 == 0) {
-            progress = (frameCount * 100 / totalFrames);
-            printProgress(fileName, progress);
+        if (frameCount % 30 == 0) {
+            std::cout << (frameCount * 100 / totalFrames) << "%\r";
+            std::cout.flush();
         }
     }
-    // allow 1 second to release video writer, otherwise ffmpeg encoding errors are likely to occur
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::cout << (frameCount * 100 / totalFrames) << "%\r";
+    std::cout.flush();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     buffer.releaseBuffer();
     cap.release();
 
-    if (frameCount == totalFrames) {
-        std::cout << fileName << "  ";
-        rlutil::setColor(10);
-        std::cout << "OK   " << std::endl;
-        rlutil::resetColor();
+    if (frameCount == totalFrames)
         return Error::OK;
-    } else {
-        std::cout << fileName << "  ";
-        rlutil::setColor(12);
-        std::cout << progress << "%" << std::endl;
-        rlutil::resetColor();
+    else
         return Error::AllFrames;
-    }
 }
 
 
@@ -256,7 +237,6 @@ std::vector<std::string> getVideoFilesFromArgs(QStringList args)
     return videoFiles;
 }
 
-
 bool showRoi(std::string videoFile, cv::Rect roi)
 {
     cv::VideoCapture cap;
@@ -271,7 +251,7 @@ bool showRoi(std::string videoFile, cv::Rect roi)
     cv::rectangle(frame, roi, cv::Scalar(0,0,255), 2);
     cv::imshow("region for motion processing", frame);
     std::cout << "press any key to close preview" << std::endl;
-    cv::waitKey(5000);
+    cv::waitKey(0);
     cv::destroyWindow("region for motion processing");
     return true;
 }
@@ -296,11 +276,9 @@ int main(int argc, char *argv[])  {
     QCommandLineParser cmdLine;
     cmdLine.setApplicationDescription("Extract motion sequences of videoFile to separate files");
     cmdLine.addHelpOption();
-    QCommandLineOption roiOption(QStringList() << "r" << "roi", "show roi before processing files");
-    cmdLine.addOption(roiOption);
     cmdLine.addPositionalArgument("videoFile", "Process single video file");
     cmdLine.addPositionalArgument("*", "Process all video files in current directory");
-    cmdLine.addPositionalArgument("", "Select directory with video files to process");
+    cmdLine.addPositionalArgument("", "Select directory with video files");
 
     cmdLine.process(a);
     const QStringList posArgs = cmdLine.positionalArguments();
@@ -317,24 +295,13 @@ int main(int argc, char *argv[])  {
                         QDir::currentPath(),
                         QFileDialog::ShowDirsOnly);
         videoFiles = getVideoFiles(videoPath);
+        for (auto file : videoFiles) {
+            std::cout << file << std::endl;
+        }
     }
 
     std::cout << videoFiles.size() << " video files selected for processing" << std::endl;
 
-    for (auto file: videoFiles) {
-        if (cmdLine.isSet(roiOption)) {
-            showRoi(file, params.detector.roi);
-        }
-
-        Error error = analyzeMotion(params, file);
-        if (error != Error::OK) {
-            std::cout << errorMsg.find(error)->second << std::endl;
-        }
-    }
-
-    waitForEnter();
-    return 0;
-    /*
     rlutil::hidecursor();
     for (auto file : videoFiles) {
         for(int i=10; i<=100; i+=10)  {
@@ -343,36 +310,15 @@ int main(int argc, char *argv[])  {
             rlutil::msleep(200);
         }
         std::cout << file << "  ";
-        rlutil::setColor(rlutil::GREEN);
+        rlutil::setColor(10);
         std::cout << "OK   " << std::endl;
-        rlutil::resetColor();
-
-        std::cout << file << "  ";
-        rlutil::setColor(rlutil::RED);
-        std::cout << "67%" << std::endl;
         rlutil::resetColor();
     }
     rlutil::showcursor();
-    */
 
-    /* check time
-    time_t start = buffer.startTime();
-    std::cout << std::put_time(std::localtime(&start), "%c") << std::endl;
-    std::cout << buffer.timeStamp() << std::endl;
-    //
-    auto startChrono = std::chrono::system_clock::from_time_t(start);
-    std::cout << "chrono: " << getTimeStamp(TimeResolution::sec_NoBlank, startChrono) << std::endl;
-    auto addChrono = startChrono + std::chrono::milliseconds(600000);
-    std::cout << "+600.000ms -> +10min"
-              << getTimeStamp(TimeResolution::sec_NoBlank, addChrono) << std::endl;
-    return Error::OK;
-    */
 
-    /*
-    // check timezone
-    const char* timeZone;
-    timeZone = getenv("TZ");
-    std::cout << "time zone: " << timeZone << std::endl;
+
+
+    waitForEnter();
     return 0;
-    */
 }

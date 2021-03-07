@@ -11,17 +11,17 @@ LogFrame::LogFrame(std::string subDir)
         logDir += "/";
         logDir += subDir;
         if (cv::utils::fs::exists(logDir) && cv::utils::fs::isDirectory(logDir)) {
-            std::cout << "log dir already exists: " << subDir << std::endl;
+            //std::cout << "log dir already exists: " << subDir << std::endl;
             m_logSubDir = subDir + "/";
 
         /* log dir does not exist yet */
         } else {
             if (cv::utils::fs::createDirectory(subDir)) {
-                std::cout << "log dir created: " << subDir << std::endl;
+                //std::cout << "log dir created: " << subDir << std::endl;
                 m_logSubDir = subDir + "/";
             } else {
-                std::cout << "cannot create log dir: " << subDir << std::endl;
-                std::cout << "use current directory instead" << std::endl;
+                //std::cout << "cannot create log dir: " << subDir << std::endl;
+                //std::cout << "use current directory instead" << std::endl;
             }
         }
     }
@@ -314,6 +314,7 @@ void MotionBuffer::pushToBuffer(cv::Mat& frame)
 void MotionBuffer::releaseBuffer()
 {
     DEBUG(getTimeStampMs() << " " << __func__ << ", started, #" << __LINE__);
+    // TODO clear buffer, wait for videoWriter to finish (this_thread::sleep)
 
     /* move to state create in order to close videoWriter */
     toStateCreate();
@@ -448,16 +449,16 @@ bool MotionBuffer::setVideoDir(std::string subDir)
         videoDirAbs += "/";
         videoDirAbs += subDir;
         if (cv::utils::fs::exists(videoDirAbs) && cv::utils::fs::isDirectory(videoDirAbs)) {
-            std::cout << "directory already exists: " << subDir << std::endl;
+            // std::cout << "directory already exists: " << subDir << std::endl;
             m_videoSubDir = subDir + "/";
 
         /* dir does not exist yet */
         } else {
             if (cv::utils::fs::createDirectory(subDir)) {
-                std::cout << "directory created: " << subDir << std::endl;
+                // std::cout << "directory created: " << subDir << std::endl;
                 m_videoSubDir = subDir + "/";
             } else {
-                std::cout << "cannot create directory: " << subDir << std::endl;
+                // std::cout << "cannot create directory: " << subDir << std::endl;
                 return false;
             }
         }
