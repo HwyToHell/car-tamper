@@ -10,7 +10,7 @@ CONFIG -= app_bundle
 
 
 
-DEFINES -= DEBUG_BUILD
+DEFINES += DEBUG_BUILD
 DEFINES -= LOG_AT_TEST
 
 
@@ -56,6 +56,7 @@ HEADERS += \
 SOURCES += \
     src/backgroundsubtraction.cpp \
     src/cli-analyzer.cpp \
+    src/main-compose-path.cpp \
     src/main-detect-motion-cam.cpp \
     src/main-detect-motion-file.cpp \
     src/main-time-from-filename.cpp \

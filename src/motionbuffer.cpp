@@ -362,6 +362,7 @@ void MotionBuffer::saveMotionToDisk()
         /* open new video file for writing */
         case State::createVideoFile:
         {
+            DEBUG(getTimeStampMs() << " " << __func__ << ", create video file, #" << __LINE__);
             m_videoFileName = timeStamp() + ".avi";
             std::string fileNameRel = m_videoSubDir + m_videoFileName;
             int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
@@ -445,6 +446,7 @@ bool MotionBuffer::setVideoDir(std::string subDir)
 {
     std::string videoDirAbs = cv::utils::fs::getcwd();
 
+    // TODO use cv::utils::fs::join to merge paths (instead of adding slashes)
     if (!subDir.empty()) {
         videoDirAbs += "/";
         videoDirAbs += subDir;

@@ -278,7 +278,8 @@ bool showRoi(std::string videoFile, cv::Rect roi)
 }
 
 
-bool waitForEnter() {
+bool waitForEnter()
+{
     using namespace std;
     cout << endl << "Press <enter> to exit" << endl;
     string str;
@@ -288,7 +289,8 @@ bool waitForEnter() {
 
 
 // TODO: progress bar
-int main(int argc, char *argv[])  {
+int main_cli_analyzer(int argc, char *argv[])
+{
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
     Params params;
