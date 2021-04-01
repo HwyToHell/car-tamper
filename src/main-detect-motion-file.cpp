@@ -48,7 +48,8 @@ int main_detect_motion_file(int argc, char *argv[]) {
     fs::path videoPath(videoPathName);
     // fs::path videoPath("/home/holger/app-dev/print-file-tree.txt");
     cout << videoPath.filename() << endl;
-    std::stringstream ss(videoPath.filename());
+    std::stringstream ss;
+    ss << videoPath.filename();
 
     std::tm t;
     ss >> std::get_time(&t, "%Y-%m-%d_%Hh%Mm%Ss");

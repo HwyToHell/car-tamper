@@ -20,7 +20,7 @@ DEFINES -= LOG_AT_TEST
 #message("defines: "$$DEFINES)
 
 
-
+linux {
 LIBS += -lopencv_core \
         -lopencv_imgcodecs \
         -lopencv_imgproc \
@@ -29,6 +29,21 @@ LIBS += -lopencv_core \
         -lopencv_videoio
 LIBS += -lv4l2 -lv4l1
 LIBS += -lstdc++fs
+}
+
+windows {
+DEFINES += _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+INCLUDEPATH += $$(OPENCV_DIR)/include
+LIBS += -L$$(OPENCV_DIR)/x64/vc16/lib \
+-lopencv_core346d \
+-lopencv_highgui346d \
+-lopencv_imgcodecs346d \
+-lopencv_imgproc346d \
+-lopencv_video346d \
+-lopencv_videoio346d
+}
+
+#message($$INCLUDEPATH)
 
 HEADERS += \
     inc/backgroundsubtraction.h \
