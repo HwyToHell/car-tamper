@@ -1,4 +1,4 @@
-// project specific
+﻿// project specific
 #include "../inc/backgroundsubtraction.h"
 #include "../inc/motion-detector.h"
 #include "../inc/motionbuffer.h"
@@ -26,8 +26,9 @@
 
 
 
-// test MotionBuffer saveToDisk by using video capture simulation
-int main_time_from_filename(int argc, char *argv[]) {
+// determine recording time from file name
+// int main_time_from_filename(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
     namespace fs = std::experimental::filesystem;

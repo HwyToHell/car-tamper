@@ -48,13 +48,13 @@ bool LogFrame::create(std::string fileName)
         fileName = getTimeStamp(TimeResolution::ms_NoBlank);
         fileName += ".json";
     }
-    std::string fileNameRel = m_logSubDir + fileName;
+    std::string filePath = m_logSubDir + fileName;
 
-    if (m_logFile.open(fileNameRel, cv::FileStorage::Mode::WRITE)) {
-        std::cout << "log file created: " << fileNameRel << std::endl;
+    if (m_logFile.open(filePath, cv::FileStorage::Mode::WRITE)) {
+        std::cout << "log file created: " << filePath << std::endl;
         m_logFileName = fileName;
     } else {
-        std::cout << "cannot create log file: " << fileNameRel << std::endl;
+        std::cout << "cannot create log file: " << filePath << std::endl;
     }
     return m_logFile.isOpened();
 }
@@ -364,12 +364,14 @@ void MotionBuffer::saveMotionToDisk()
         {
             DEBUG(getTimeStampMs() << " " << __func__ << ", create video file, #" << __LINE__);
             m_videoFileName = timeStamp() + ".avi";
-            std::string fileNameRel = m_videoSubDir + m_videoFileName;
-            int fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
+            std::string filePath = cv::utils::fs::join(m_videoDirAbs, m_videoFileName);
+
+            // H264 does not work on windows, use XVID instead
+            int fourcc = cv::VideoWriter::fourcc('X','V','I','D');
             assert(m_frameSize != cv::Size(0,0));
 
-            if(!m_videoWriter.open(fileNameRel, fourcc, m_fps, m_frameSize)) {
-                std::cout << "cannot open file: " << fileNameRel << std::endl;
+            if(!m_videoWriter.open(filePath, fourcc, m_fps, m_frameSize)) {
+                std::cout << "cannot open file: " << filePath << std::endl;
                 m_isSaveToDiskRunning = false;
                 m_terminate = true;
                 break;
@@ -445,26 +447,23 @@ time_t MotionBuffer::startTime() const
 bool MotionBuffer::setVideoDir(std::string subDir)
 {
     std::string videoDirAbs = cv::utils::fs::getcwd();
+    videoDirAbs = cv::utils::fs::join(videoDirAbs, subDir);
 
-    // TODO use cv::utils::fs::join to merge paths (instead of adding slashes)
-    if (!subDir.empty()) {
-        videoDirAbs += "/";
-        videoDirAbs += subDir;
-        if (cv::utils::fs::exists(videoDirAbs) && cv::utils::fs::isDirectory(videoDirAbs)) {
-            // std::cout << "directory already exists: " << subDir << std::endl;
-            m_videoSubDir = subDir + "/";
+    if (cv::utils::fs::exists(videoDirAbs) && cv::utils::fs::isDirectory(videoDirAbs)) {
+        // std::cout << "directory already exists: " << subDir << std::endl;
+        m_videoDirAbs = videoDirAbs;
 
-        /* dir does not exist yet */
+    /* dir does not exist yet */
+    } else {
+        if (cv::utils::fs::createDirectory(videoDirAbs)) {
+            // std::cout << "directory created: " << subDir << std::endl;
+            m_videoDirAbs = videoDirAbs;
         } else {
-            if (cv::utils::fs::createDirectory(subDir)) {
-                // std::cout << "directory created: " << subDir << std::endl;
-                m_videoSubDir = subDir + "/";
-            } else {
-                // std::cout << "cannot create directory: " << subDir << std::endl;
-                return false;
-            }
+            // std::cout << "cannot create directory: " << subDir << std::endl;
+            return false;
         }
     }
+
     return true;
 }
 

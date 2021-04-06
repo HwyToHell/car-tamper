@@ -116,7 +116,7 @@ private:
     TimePoint               m_startTime;
     bool                    m_terminate;
     std::thread             m_threadSaveToDisk;
-    std::string             m_videoSubDir;
+    std::string             m_videoDirAbs;
     std::string             m_videoFileName;
     cv::VideoWriter         m_videoWriter;
 };

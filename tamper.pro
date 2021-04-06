@@ -34,16 +34,30 @@ LIBS += -lstdc++fs
 windows {
 DEFINES += _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 INCLUDEPATH += $$(OPENCV_DIR)/include
-LIBS += -L$$(OPENCV_DIR)/x64/vc16/lib \
--lopencv_core346d \
--lopencv_highgui346d \
--lopencv_imgcodecs346d \
--lopencv_imgproc346d \
--lopencv_video346d \
--lopencv_videoio346d
+    CONFIG(debug,debug|release) {
+    message(debug build!)
+    LIBS += -L$$(OPENCV_DIR)/x64/vc16/lib \
+    -lopencv_core346d \
+    -lopencv_highgui346d \
+    -lopencv_imgcodecs346d \
+    -lopencv_imgproc346d \
+    -lopencv_video346d \
+    -lopencv_videoio346d
+    }
+    CONFIG(release,debug|release) {
+    message(release build!)
+    LIBS += -L$$(OPENCV_DIR)/x64/vc16/lib \
+    -lopencv_core346 \
+    -lopencv_highgui346 \
+    -lopencv_imgcodecs346 \
+    -lopencv_imgproc346 \
+    -lopencv_video346 \
+    -lopencv_videoio346
+    }
 }
 
-#message($$INCLUDEPATH)
+message($$LIBS)
+
 
 HEADERS += \
     inc/backgroundsubtraction.h \
@@ -56,9 +70,6 @@ HEADERS += \
 SOURCES += \
     src/backgroundsubtraction.cpp \
     src/cli-analyzer.cpp \
-    src/main-compose-path.cpp \
-    src/main-detect-motion-cam.cpp \
-    src/main-detect-motion-file.cpp \
     src/main-time-from-filename.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
