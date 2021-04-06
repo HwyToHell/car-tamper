@@ -162,6 +162,8 @@ Error analyzeMotion(Params params, std::string fileName)
     ss >> std::get_time(&startTime, "%Y-%m-%d_%Hh%Mm%Ss");
     if (ss.fail())
         return Error::ParseTime;
+    // always use winter time
+    startTime.tm_isdst = 0;
 
     // output dir
     std::stringstream outDirectory;
@@ -289,7 +291,7 @@ bool waitForEnter()
 
 
 // TODO: progress bar
-int main_cli_analyzer(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
