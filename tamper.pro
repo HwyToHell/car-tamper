@@ -41,8 +41,6 @@ HEADERS += \
 SOURCES += \
     src/backgroundsubtraction.cpp \
     src/cli-analyzer.cpp \
-    src/main-detect-motion-cam.cpp \
-    src/main-detect-motion-file.cpp \
     src/main-time-from-filename.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \

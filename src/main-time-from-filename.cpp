@@ -26,8 +26,9 @@
 
 
 
-// test MotionBuffer saveToDisk by using video capture simulation
+// determine recording time from file name
 int main_time_from_filename(int argc, char *argv[]) {
+// int main(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
     namespace fs = std::experimental::filesystem;

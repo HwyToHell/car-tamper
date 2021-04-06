@@ -161,6 +161,8 @@ Error analyzeMotion(Params params, std::string fileName)
     ss >> std::get_time(&startTime, "%Y-%m-%d_%Hh%Mm%Ss");
     if (ss.fail())
         return Error::ParseTime;
+    // always use winter time
+    startTime.tm_isdst = 0;
 
     // output dir
     std::stringstream outDirectory;
@@ -316,6 +318,7 @@ int main(int argc, char *argv[])  {
                         "Select Directory",
                         QDir::currentPath(),
                         QFileDialog::ShowDirsOnly);
+        qDebug() << videoPath;
         videoFiles = getVideoFiles(videoPath);
     }
 
