@@ -43,18 +43,33 @@ int main_time_from_filename(int argc, char *argv[]) {
 
     fs::path videoPath(videoPathName);
     // fs::path videoPath("/home/holger/app-dev/print-file-tree.txt");
+    videoPath.replace_extension();
     cout << videoPath.filename() << endl;
-    std::stringstream ss;
-    ss << videoPath.filename();
 
-    std::tm t;
+    std::stringstream ss;
+    // convert path to string to omit double quotes and avoid get_time parsing error
+    ss << videoPath.filename().string();
+    cout << ss.str() << endl;
+
+    std::tm t{};
+    time_t zeroDay = std::time(nullptr);
+    t = *std::localtime(&zeroDay);
+
+    ss.imbue(std::locale("de_DE.utf-8"));
     ss >> std::get_time(&t, "%Y-%m-%d_%Hh%Mm%Ss");
 
     if (ss.fail()) {
         cout << "parse failed" << endl;
+        if (ss.rdstate() == std::ios_base::badbit)
+            cout << "badbit" << endl;
+        if (ss.rdstate() == std::ios_base::eofbit)
+            cout << "badbit" << endl;
+        if (ss.rdstate() == std::ios_base::failbit)
+            cout << "badbit" << endl;
     } else {
         cout << std::put_time(&t, "%c") << endl;
     }
+    t.tm_isdst = 0;
 
     cv::VideoCapture cap(videoPathName);
     if (!cap.isOpened()) {

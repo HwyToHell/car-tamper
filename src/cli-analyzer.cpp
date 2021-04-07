@@ -147,23 +147,29 @@ void printProgress(std::string file, int progress)
 
 Error analyzeMotion(Params params, std::string fileName)
 {
-    // file exists
+    /* file exists */
     namespace fs = std::experimental::filesystem;
     fs::path videoPath(fileName);
     if (!fs::exists(videoPath))
         return Error::FileExist;
 
-    // parse time from file name
+    /* parse time from file name */
+    videoPath.replace_extension();
     std::stringstream ss;
-    ss << videoPath.filename();
+
+    // convert path to string to omit double quotes and avoid get_time parsing error
+    ss << videoPath.filename().string();
+
+    // setting time zone with localtime
     time_t zeroDay = std::time(nullptr);
-    // setting time zone
     std::tm startTime = *std::localtime(&zeroDay);
     ss >> std::get_time(&startTime, "%Y-%m-%d_%Hh%Mm%Ss");
-    if (ss.fail())
-        return Error::ParseTime;
+
     // always use winter time
     startTime.tm_isdst = 0;
+    if (ss.fail())
+        return Error::ParseTime;
+
 
     // output dir
     std::stringstream outDirectory;
@@ -299,13 +305,13 @@ int main(int argc, char *argv[])
 
     // parse command line args
     QCommandLineParser cmdLine;
-    cmdLine.setApplicationDescription("Extract motion sequences of videoFile to separate files");
+    cmdLine.setApplicationDescription("Extract motion sequences of video file to separate directories");
     cmdLine.addHelpOption();
     QCommandLineOption roiOption(QStringList() << "r" << "roi", "show roi before processing files");
     cmdLine.addOption(roiOption);
-    cmdLine.addPositionalArgument("videoFile", "Process single video file");
+    cmdLine.addPositionalArgument("file", "Process video file(s), separated by blanks");
     cmdLine.addPositionalArgument(".", "Process all video files in current directory");
-    cmdLine.addPositionalArgument("", "Select directory with video files to process");
+    cmdLine.addPositionalArgument("", "Select video files to process");
 
     cmdLine.process(a);
     const QStringList posArgs = cmdLine.positionalArguments();
@@ -325,15 +331,22 @@ int main(int argc, char *argv[])
 
     // select directory and extract all video files
     } else {
-        QString videoPath = QFileDialog::getExistingDirectory(nullptr,
-                        "Select Directory",
-                        QDir::currentPath(),
-                        QFileDialog::ShowDirsOnly);
-        qDebug() << videoPath;
-        videoFiles = getVideoFiles(videoPath);
+        QStringList selectedFiles = QFileDialog::getOpenFileNames(nullptr,
+             "Select video files",
+             QDir::currentPath(),
+            "Video files (*.avi *.mp4)" );
+        for (auto file : selectedFiles) {
+            std::string f(file.toUtf8());
+            videoFiles.push_back(f);
+        }
     }
 
     std::cout << videoFiles.size() << " video files selected for processing" << std::endl;
+    /* DEBUG
+    for (auto file: videoFiles)
+        std::cout << file << std::endl;
+    return 0;
+    */
 
     for (auto file: videoFiles) {
         if (cmdLine.isSet(roiOption)) {
@@ -346,47 +359,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    waitForEnter();
+    //waitForEnter();
     return 0;
-    /*
-    rlutil::hidecursor();
-    for (auto file : videoFiles) {
-        for(int i=10; i<=100; i+=10)  {
-            std::cout << file << "  " << i << "%\r";
-            std::cout.flush();
-            rlutil::msleep(200);
-        }
-        std::cout << file << "  ";
-        rlutil::setColor(rlutil::GREEN);
-        std::cout << "OK   " << std::endl;
-        rlutil::resetColor();
-
-        std::cout << file << "  ";
-        rlutil::setColor(rlutil::RED);
-        std::cout << "67%" << std::endl;
-        rlutil::resetColor();
-    }
-    rlutil::showcursor();
-    */
-
-    /* check time
-    time_t start = buffer.startTime();
-    std::cout << std::put_time(std::localtime(&start), "%c") << std::endl;
-    std::cout << buffer.timeStamp() << std::endl;
-    //
-    auto startChrono = std::chrono::system_clock::from_time_t(start);
-    std::cout << "chrono: " << getTimeStamp(TimeResolution::sec_NoBlank, startChrono) << std::endl;
-    auto addChrono = startChrono + std::chrono::milliseconds(600000);
-    std::cout << "+600.000ms -> +10min"
-              << getTimeStamp(TimeResolution::sec_NoBlank, addChrono) << std::endl;
-    return Error::OK;
-    */
-
-    /*
-    // check timezone
-    const char* timeZone;
-    timeZone = getenv("TZ");
-    std::cout << "time zone: " << timeZone << std::endl;
-    return 0;
-    */
 }
