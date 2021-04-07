@@ -82,11 +82,11 @@ public:
                 };
     void        toStateCreate();
     std::string waitForVideoFile();
-    //std::string             timeStamp();
+    std::string             timeStamp();
 private:
     bool                    isPostBufferFinished();
     void                    saveMotionToDisk();
-    std::string             timeStamp();
+    //std::string             timeStamp();
     void                    writeUntilBufferEmpty();
     std::deque<cv::Mat>     m_buffer;
     std::condition_variable m_cndBufferAccess;

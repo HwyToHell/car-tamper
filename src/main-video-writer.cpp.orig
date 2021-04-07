@@ -1,3 +1,14 @@
+<<<<<<< HEAD
+#include "../inc/video-capture-simu.h"
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/filesystem.hpp>
+
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+=======
 // project specific
 #include "../inc/motionbuffer.h"
 #include "../inc/backgroundsubtraction.h"
@@ -5,11 +16,11 @@
 
 // opencv
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/utils/filesystem.hpp>
 
 // std
 #include <iostream>
 #include <string>
+>>>>>>> 1.1
 
 void printParams(cv::VideoCapture& vidCap) {
     using namespace std;
@@ -22,15 +33,38 @@ void printParams(cv::VideoCapture& vidCap) {
     return;
 }
 
+<<<<<<< HEAD
+bool waitForEnter();
+
+
+=======
+>>>>>>> 1.1
 
 // test cv::VideoCapture (read from web cam), get and set parameters,
 // write video with cv::VideoWriter
 int main_video_writer(int argc, char *argv[])
 {
-    (void)argc; (void)argv;
+<<<<<<< HEAD
+    (void)argc;
     using namespace std;
     string videoFile = argv[1];
     cout << "video file to process: " << videoFile << endl;
+
+
+    //cout << cv::getBuildInformation() << endl;
+    cv::VideoCapture cap;
+    cap.open(0);
+
+    if (cap.isOpened()) {
+        printParams(cap);
+    }
+
+
+   // return 0;
+
+=======
+    (void)argc; (void)argv;
+    using namespace std;
 
 
     cout << cv::getBuildInformation() << endl;
@@ -44,6 +78,7 @@ int main_video_writer(int argc, char *argv[])
     cout << "height set: " << success << endl;
     cout << "width:   " << cap.get(cv::CAP_PROP_FRAME_WIDTH) << endl;
     cout << "height:  " << cap.get(cv::CAP_PROP_FRAME_HEIGHT) << endl;
+>>>>>>> 1.1
 
 
     cv::Mat frame;
@@ -51,11 +86,43 @@ int main_video_writer(int argc, char *argv[])
 
     cv::VideoWriter writer;
 
+<<<<<<< HEAD
+
+    int codec_x263 = cv::VideoWriter::fourcc('X','2','6','3');
+    int codec_mjpg = cv::VideoWriter::fourcc('M','J','P','G');
+    int codec_h264 = cv::VideoWriter::fourcc('X','2','6','4');
+    int codec_xvid = cv::VideoWriter::fourcc('X','V','I','D');
+
+    cv::Size frameSize(cap.get(cv::CAP_PROP_FRAME_WIDTH), cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+    if (writer.open("out_xvid.avi", codec_xvid, 30, frameSize))  {
+        std::cout << "writer open" << std::endl;
+        std::cout << writer.getBackendName() << std::endl;
+    } else {
+        std::cout << "cannot open writer" << std::endl;
+    }
+
+
+    while (cap.read(frame)) {
+        ++cnt;
+        //cout << endl << "frame: " << cnt << endl;
+
+        cv::imshow("video", frame);
+        writer.write(frame);
+        std::cout << "frame:   " << cnt << std::endl;
+        std::cout << "quality: " << writer.get(cv::VIDEOWRITER_PROP_QUALITY) << std::endl;
+        std::cout << "bytes:   " << writer.get(cv::VIDEOWRITER_PROP_FRAMEBYTES) << std::endl << std::endl;
+=======
     int codec_h264 = cv::VideoWriter::fourcc('X','2','6','4');
     int codec_mjpg =  cv::VideoWriter::fourcc('M','J','P','G');
     int codec_xvid = cv::VideoWriter::fourcc('X','V','I','D');
     cv::Size frameSize(cap.get(cv::CAP_PROP_FRAME_WIDTH), cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+    if (writer.open("out_xvid.avi", codec_xvid, 30, frameSize)) {
+        cout << "writer open" << endl;
+        cout << writer.getBackendName() << endl;
+        cout << "quality: " << writer.get(cv::VIDEOWRITER_PROP_QUALITY) << endl;
+        cout << "bytes:   " << writer.get(cv::VIDEOWRITER_PROP_FRAMEBYTES) << endl << endl;
     } else {
+        cout << "cannot open writer" << endl;
     }
 
     //return 0;
@@ -72,26 +139,42 @@ int main_video_writer(int argc, char *argv[])
         cout << "bytes:   " << writer.get(cv::VIDEOWRITER_PROP_FRAMEBYTES) << endl << endl;
 
 
+>>>>>>> 1.1
 
         if (cnt >= 100) {
             break;
         }
 
+<<<<<<< HEAD
+        if (cv::waitKey(10) == 27) {
+            std::cout << "esc -> end video processing" << std::endl;
+=======
 
 
         if (cv::waitKey(10) == 27) {
             cout << "esc -> end video processing" << endl;
+>>>>>>> 1.1
             break;
         }
 
 
     }
+<<<<<<< HEAD
+    std::cout << "end reading frames " << endl;
+
+    //buf.printBuffer();
+
+    writer.release();
+
+    cap.release();
+=======
     cout << "end reading frames " << endl;
 
     //buf.printBuffer();
 
     // videoWriter.release();
     //cap.release();
+>>>>>>> 1.1
     return 0;
 
 }

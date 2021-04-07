@@ -329,6 +329,7 @@ int main(int argc, char *argv[])
                         "Select Directory",
                         QDir::currentPath(),
                         QFileDialog::ShowDirsOnly);
+        qDebug() << videoPath;
         videoFiles = getVideoFiles(videoPath);
     }
 
