@@ -60,6 +60,7 @@ message($$LIBS)
 
 
 HEADERS += \
+    ../cpp/inc/rlutil.h \
     inc/backgroundsubtraction.h \
     inc/motion-detector.h \
     inc/motionbuffer.h \
