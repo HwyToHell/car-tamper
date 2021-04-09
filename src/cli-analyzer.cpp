@@ -202,6 +202,7 @@ Error analyzeMotion(Params params, std::string fileName)
     int frameCount = 0;
     int progress = 0;
     cv::Mat frame;
+    rlutil::saveDefaultColor();
     rlutil::CursorHider hide;
     while (cap.read(frame)) {
         ++frameCount;
@@ -227,13 +228,13 @@ Error analyzeMotion(Params params, std::string fileName)
 
     if (frameCount == totalFrames) {
         std::cout << fileName << "  ";
-        rlutil::setColor(10);
+        rlutil::setColor(10); // green
         std::cout << "OK   " << std::endl;
         rlutil::resetColor();
         return Error::OK;
     } else {
         std::cout << fileName << "  ";
-        rlutil::setColor(12);
+        rlutil::setColor(12); // red
         std::cout << progress << "%" << std::endl;
         rlutil::resetColor();
         return Error::AllFrames;
@@ -301,6 +302,9 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
+    // settings file
+    // linux:   ~/.config/grzonka/tamper.conf
+    // windows: HKEY_CURRENT_USER\Software\grzonka\tamper
     Params params;
 
     // parse command line args
