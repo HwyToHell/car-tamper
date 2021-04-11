@@ -423,27 +423,6 @@ void MotionBuffer::setSaveToDisk(bool value)
 }
 
 
-void MotionBuffer::startTime(std::tm time)
-{
-    // tm -> time_t, time_t -> chrono
-    // add milliseconds in timeStamp
-    time_t epochTime = mktime(&time);
-    m_startTime = std::chrono::system_clock::from_time_t(epochTime);
-
-    // reset frame counter
-    {
-        std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
-        m_frameCount = 0;
-    }
-}
-
-
-time_t MotionBuffer::startTime() const
-{
-    return std::chrono::system_clock::to_time_t(m_startTime);
-}
-
-
 bool MotionBuffer::setVideoDir(std::string subDir)
 {
     std::string videoDirAbs = cv::utils::fs::getcwd();
@@ -465,6 +444,27 @@ bool MotionBuffer::setVideoDir(std::string subDir)
     }
 
     return true;
+}
+
+
+void MotionBuffer::startTime(std::tm time)
+{
+    // tm -> time_t, time_t -> chrono
+    // add milliseconds in timeStamp
+    time_t epochTime = mktime(&time);
+    m_startTime = std::chrono::system_clock::from_time_t(epochTime);
+
+    // reset frame counter
+    {
+        std::lock_guard<std::mutex> bufferLock(m_mtxBufferAccess);
+        m_frameCount = 0;
+    }
+}
+
+
+time_t MotionBuffer::startTime() const
+{
+    return std::chrono::system_clock::to_time_t(m_startTime);
 }
 
 

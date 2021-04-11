@@ -27,19 +27,20 @@
 
 
 // determine recording time from file name
-int main_time_from_filename(int argc, char *argv[]) {
+int main_time_from_file(int argc, char *argv[]) {
 // int main(int argc, char *argv[]) {
     (void)argc; (void)argv;
     using namespace std;
     namespace fs = std::experimental::filesystem;
 
+    /*
     QApplication a(argc, argv);
     QString videoFile = QFileDialog::getOpenFileName(nullptr,
          "Select video file",
          QDir::currentPath(),
         "Video files (*.avi *.mp4)" );
     std::string videoPathName(videoFile.toUtf8());
-    cout << videoPathName << endl;
+    //cout << videoPathName << endl;
 
     fs::path videoPath(videoPathName);
     // fs::path videoPath("/home/holger/app-dev/print-file-tree.txt");
@@ -57,6 +58,7 @@ int main_time_from_filename(int argc, char *argv[]) {
 
     ss.imbue(std::locale("de_DE.utf-8"));
     ss >> std::get_time(&t, "%Y-%m-%d_%Hh%Mm%Ss");
+    cout << "dst: " << t.tm_isdst << endl;
 
     if (ss.fail()) {
         cout << "parse failed" << endl;
@@ -69,26 +71,29 @@ int main_time_from_filename(int argc, char *argv[]) {
     } else {
         cout << std::put_time(&t, "%c") << endl;
     }
-    t.tm_isdst = 0;
+    */
 
-    cv::VideoCapture cap(videoPathName);
-    if (!cap.isOpened()) {
-        cout << "cannot open video file" << endl;
-        return -1;
-    }
+    std::stringstream ssWinter("2020-11-06_14h00m00s");
+    std::stringstream ssSummer("2021-04-09_14h00m00s");
+    time_t now = std::time(nullptr);
+    std::tm tWinter{};
+    std::tm tSummer{};
+    //tWinter = *std::localtime(&now);
+    //tSummer = *std::localtime(&now);
 
-    double fps = cap.get(cv::CAP_PROP_FPS);
-    double frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
-    double min = frames / fps / 60;
+    ssWinter >> std::get_time(&tWinter, "%Y-%m-%d_%Hh%Mm%Ss");
+    ssSummer >> std::get_time(&tSummer, "%Y-%m-%d_%Hh%Mm%Ss");
+    tWinter.tm_isdst = -1;
+    tSummer.tm_isdst = -1;
 
-    cout << "fps:    " << fps << "\n"
-         << "frames: " << frames << "\n"
-         << "min:    " << min << endl;
+    time_t timeWinter = std::mktime(&tWinter);
+    time_t timeSummer = std::mktime(&tSummer);
+    cout << "winter put_time: " << std::put_time(std::localtime(&timeWinter), "%F %T") << endl;
+    cout << "summer put_time: " << std::put_time(std::localtime(&timeSummer), "%F %T") << endl;
 
-    videoPath.remove_filename();
-    for (auto entry : fs::directory_iterator(videoPath)) {
-        cout << entry.path() << endl;
-    }
+    /*
+    // check, if mktime sets correct time zone, if isdst = -1
+    t.tm_isdst = -1;
 
     // convert tm to chrono::time_point
     time_t epochTime = mktime(&t);
@@ -96,21 +101,18 @@ int main_time_from_filename(int argc, char *argv[]) {
     cout << "epoch time: " << epochTime << std::endl;
 
     auto startTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(startTime.time_since_epoch()).count();
-    cout << "time point milli sec: " << startTimeMs << std::endl;
-
+    //cout << "time point milli sec: " << startTimeMs << std::endl;
+    std::tm* pStartTm;
+    pStartTm = std::localtime(&epochTime);
     cout << "start time put_time: " << std::put_time(std::localtime(&epochTime), "%F %T") << endl;
+    cout << "dst: " << pStartTm->tm_isdst << endl;
 
-    auto offset = std::chrono::milliseconds(1055);
-    auto startTime1 = startTime + offset;
-    auto epochMs1 = std::chrono::duration_cast<std::chrono::milliseconds>(startTime1.time_since_epoch()).count();
-    cout << "time point milli sec: " << epochMs1 << std::endl;
-
-    // double rep ändert den return type von count() nach double
-    // dieser Typ erzeugt bei to_time_t einen Typfehler
-    auto offsetFloat = std::chrono::duration<double>(0.011);
-    std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<double>> startTime2 = startTime + offsetFloat;
-    auto epochMs2 = std::chrono::duration_cast<std::chrono::milliseconds>(startTime2.time_since_epoch()).count();
-    cout << "time point milli sec float: " << epochMs2 << std::endl;
+    auto offset = std::chrono::milliseconds(10000);
+    auto endTime = startTime + offset;
+    auto endTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(endTime.time_since_epoch()).count();
+    time_t endTimeT = std::chrono::system_clock::to_time_t(endTime);
+    cout << "start + offset put_time: " << std::put_time(std::localtime(&endTimeT), "%F %T") << endl;
+    */
 
 
     return 0;

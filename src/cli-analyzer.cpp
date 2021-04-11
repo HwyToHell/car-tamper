@@ -159,17 +159,14 @@ Error analyzeMotion(Params params, std::string fileName)
 
     // convert path to string to omit double quotes and avoid get_time parsing error
     ss << videoPath.filename().string();
-
-    // setting time zone with localtime
-    time_t zeroDay = std::time(nullptr);
-    std::tm startTime = *std::localtime(&zeroDay);
+    std::tm startTime{};
     ss >> std::get_time(&startTime, "%Y-%m-%d_%Hh%Mm%Ss");
-
-    // always use winter time
-    startTime.tm_isdst = 0;
     if (ss.fail())
         return Error::ParseTime;
 
+    // isdst = -1 --> determine DST and time zone via maketime
+    startTime.tm_isdst = -1;
+    std::mktime(&startTime);
 
     // output dir
     std::stringstream outDirectory;
