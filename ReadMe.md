@@ -17,6 +17,8 @@
      - [motionbuffer.h](inc/motionbuffer.h)
      - [time\-stamp.h](inc/time-stamp.h)
      - [video\-capture\-simu.h](inc/video-capture-simu.h)
+   - __sh__
+     - shell scripts for raspberry pi (delete old video files to avoid memory shortage on SD card)
    - __spec__
      - [FSpec \- Car Tamper.odt](spec/FSpec%20-%20Car%20Tamper.odt)			feature spec with implementaion details
      - [RSpec \- Car Tamper.odt](spec/RSpec%20-%20Car%20Tamper.odt)			requirements
