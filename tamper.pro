@@ -57,6 +57,8 @@ INCLUDEPATH += $$(OPENCV_DIR)/include
 }
 
 message($$LIBS)
+#message($$(OPENCV_DIR))
+
 
 
 HEADERS += \
