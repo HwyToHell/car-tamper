@@ -64,6 +64,13 @@ for ($i=0; $i -lt $args.count; $i++) {
     $datesToAnalyze += $day
 }
 
+Write-Information "Dates to analyze"`
+    -InformationAction Continue
+foreach ($date in $datesToAnalyze) {
+    Write-Information "$(Get-Date -Date $date -Format yyyy-MM-dd)" -InformationAction Continue
+}
+
+
 
 # fetch files from remote
 ###############################################################################
@@ -76,16 +83,23 @@ $user = "pi"
 $pass = ConvertTo-SecureString "check0815" -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PSCredential ($user, $pass)
 
-if (-not (Test-Connection $remoteHost -Quiet)) {
-    Write-Information "cannot reach remote host $remoteHost via network"`
+Write-Information "Connecting to $remoteHost"`
+    -InformationAction Continue
+if (Test-Connection $remoteHost -Quiet) {
+    Write-Information "Remote host is alive"`
         -InformationAction Continue
-    exit -1
+} else {
+    Write-Information "Cannot reach remote host via network"`
+        -InformationAction Continue
+    exit $retVal
 }
 
 try {
     $session = New-SSHSession -ComputerName $remoteHost -Credential $cred -ErrorAction Stop
+    Write-Information "Opened SSH connection to ${remoteHost} with session ID: $($session.SessionID)"`
+        -InformationAction Continue
 } catch {
-    Write-Information "Trying to connect to ${remoteHost}: $_" -InformationAction Continue
+    Write-Information "Connection error at ${remoteHost}: $_" -InformationAction Continue
     exit $retVal
 }
 
@@ -116,12 +130,59 @@ foreach ($date in $datesToAnalyze) {
     $filesToFetch += getFileNamesForDate $date $session.SessionId $remotePath
 }
 
+# close SSH connection and check exit state
+if (Remove-SSHSession -SessionId $session.SessionId) {
+    Write-Information "Closed SSH connection with session ID $($session.SessionId)"`
+        -InformationAction Continue
+} else {
+    Write-Information "Not able to close session ID $($session.SessionId)"`
+        -InformationAction Continue
+}
+
+# check existence of local path and create, if necessary
+if (-not (Test-Path -Path $localPathInput)) {
+    New-Item -ItemType Directory -Force -Path $localPathInput
+}    
+
 # copy files from remote to local
+Write-Information "Downloading files" -InformationAction Continue
+$nAttempts = 3
+foreach ($file in $filesToFetch) {
+    $remoteFilePath = $remotePath + "/" + $file
+    $completed = $false
+    for ($i = 1; $i -le $nAttempts; $i++) {
+        try {
+            Get-SCPItem -ComputerName $remoteHost -Credential $cred -Path $remoteFilePath -PathType File -Destination $localPathInput -ErrorAction Stop
+            $completed = $true
+            Write-Information "Successful: $file" -InformationAction Continue
+            break
+        } catch {
+            Write-Information "Attempt $i error when downloading ${file}: $_" -InformationAction Continue
+            $completed = $false
+        }
+    }
+    if (-not $completed) {
+        Write-Information "Exit after $nAttempts attempts" -InformationAction Continue
+        exit $retVal
+    }     
+}
 
 
+# analyze local files
+###############################################################################
+$retVal = 7
+Set-Location $localPathInput
+Write-Information "Analyzing motion" -InformationAction Continue
+Start-Process .\tamper -ArgumentList "."
+Write-Information "Done" -InformationAction Continue
 
-# im Input Dir befinden sich alle Verzeichnisse mit den analysierten Videos (*.avi)
-# für jeden Tag ein Verzeichnis erstellen und Videos verschieben
-
-    # TODO check if true, return $null if otherwise
-    Remove-SSHSession -SessionId $session.SessionId
+# move motion files to date directory
+###############################################################################
+foreach ($date in $datesToAnalyze) {
+    $dateDir = Get-Date -Date $date -Format yyyy-MM-dd
+    $datePath = Join-Path $localPath $dateDir
+    New-Item -Path $localPath -Name $dateDir -ItemType Directory -Force
+    #TODO
+    # alle Verzeichnisse des aktuellen Datums in Array lesen
+    # für jeden Tag ein Verzeichnis erstellen und Videos verschieben
+}
