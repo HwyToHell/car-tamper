@@ -173,16 +173,28 @@ foreach ($file in $filesToFetch) {
 $retVal = 7
 Set-Location $localPathInput
 Write-Information "Analyzing motion" -InformationAction Continue
-Start-Process .\tamper -ArgumentList "."
+.\tamper .
 Write-Information "Done" -InformationAction Continue
 
 # move motion files to date directory
 ###############################################################################
 foreach ($date in $datesToAnalyze) {
-    $dateDir = Get-Date -Date $date -Format yyyy-MM-dd
-    $datePath = Join-Path $localPath $dateDir
-    New-Item -Path $localPath -Name $dateDir -ItemType Directory -Force
-    #TODO
-    # alle Verzeichnisse des aktuellen Datums in Array lesen
-    # für jeden Tag ein Verzeichnis erstellen und Videos verschieben
+    # create date directory
+    $dateString = Get-Date -Date $date -Format yyyy-MM-dd
+    $datePath = Join-Path $localPath $dateString
+    New-Item -Path $localPath -Name $dateString -ItemType Directory -Force
+
+    # move motion files
+    $dayDirs = Get-ChildItem -Directory -Filter $dateString*
+    foreach ($dir in $dayDirs) {
+        Move-Item -Path $dir\*.avi -Destination $datePath -Force
+        Remove-Item $dir
+    }  
+    
+    # delete long video files
+    $videoFiles = Get-ChildItem -Filter $dateString*.mp4   
+    foreach ($file in $videoFiles) {
+        Remove-Item $file
+    } 
 }
+

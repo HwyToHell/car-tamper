@@ -1,4 +1,4 @@
-﻿$videoPath = "C:\Users\holge\Videos"
+﻿$videoPath = "C:\Users\holge\Videos\Input"
 
 $days = 18, 25, 26
 $hours = 14 .. 23
@@ -18,11 +18,15 @@ foreach ($day in $days) {
         # create 5 files with consecutive file name
         for ($i = 0; $i -lt 5; $i++) {
             $fileIndex++
-            $fileName = "$fileIndex" + ".mp4"
+            $fileName = "$fileIndex" + ".avi"
             $timePath = Join-Path -Path $videoPath -ChildPath $timeDir
             # -Force re-creates files
             New-Item -ItemType file -Path $timePath -Name $fileName -Force
 
         }
+
+        # create long video file mp4
+        $longVideoFileName = $timeDir + ".mp4"
+        New-Item -ItemType file -Path $videoPath -Name $longVideoFileName -Force
     }
 }
