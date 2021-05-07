@@ -1,4 +1,5 @@
 ﻿param ([switch]$a, [switch]$d, [switch]$h)
+$currentPath = Get-Location
 
 
 # show help if no arguments provided
@@ -91,15 +92,17 @@ if (Test-Connection $remoteHost -Quiet) {
 } else {
     Write-Information "Cannot reach remote host via network"`
         -InformationAction Continue
+    Write-Host "Script aborted" -ForegroundColor Red
     exit $retVal
 }
 
 try {
     $session = New-SSHSession -ComputerName $remoteHost -Credential $cred -ErrorAction Stop
-    Write-Information "Opened SSH connection to ${remoteHost} with session ID: $($session.SessionID)"`
+    Write-Information "Opened SSH session on ${remoteHost}"`
         -InformationAction Continue
 } catch {
     Write-Information "Connection error at ${remoteHost}: $_" -InformationAction Continue
+    Write-Host "Script aborted" -ForegroundColor Red
     exit $retVal
 }
 
@@ -116,13 +119,16 @@ function getFileNamesForDate {
             $filesSelected += $file
         }
     } 
-   
+    
+    if ($filesSelected.Count -eq 0) {
+        Write-Information "No video files available for $dateString" -InformationAction Continue
+    }
     return $filesSelected
 }
 
 # file locations
 $remotePath = "/home/pi/Videos"
-$localPath = "C:\Users\holge\Videos"
+$localPath = "D:\Carla\Videos\Skoda"
 $localPathInput = Join-Path $localPath Input
 
 # populate array for files to fetch
@@ -132,11 +138,18 @@ foreach ($date in $datesToAnalyze) {
 
 # close SSH connection and check exit state
 if (Remove-SSHSession -SessionId $session.SessionId) {
-    Write-Information "Closed SSH connection with session ID $($session.SessionId)"`
+    Write-Information "Closed SSH session"`
         -InformationAction Continue
 } else {
     Write-Information "Not able to close session ID $($session.SessionId)"`
         -InformationAction Continue
+}
+
+# exit, if no files available
+if ($filesToFetch.Count -eq 0) {
+    Write-Information "No video files to download" -InformationAction Continue
+    Write-Host "Script aborted" -ForegroundColor Red
+    exit $retVal
 }
 
 # check existence of local path and create, if necessary
@@ -163,6 +176,7 @@ foreach ($file in $filesToFetch) {
     }
     if (-not $completed) {
         Write-Information "Exit after $nAttempts attempts" -InformationAction Continue
+        Write-Host "Script aborted" -ForegroundColor Red
         exit $retVal
     }     
 }
@@ -173,7 +187,7 @@ foreach ($file in $filesToFetch) {
 $retVal = 7
 Set-Location $localPathInput
 Write-Information "Analyzing motion" -InformationAction Continue
-.\tamper .
+tamper .
 Write-Information "Done" -InformationAction Continue
 
 # move motion files to date directory
@@ -182,7 +196,7 @@ foreach ($date in $datesToAnalyze) {
     # create date directory
     $dateString = Get-Date -Date $date -Format yyyy-MM-dd
     $datePath = Join-Path $localPath $dateString
-    New-Item -Path $localPath -Name $dateString -ItemType Directory -Force
+    $newDir = New-Item -Path $localPath -Name $dateString -ItemType Directory -Force
 
     # move motion files
     $dayDirs = Get-ChildItem -Directory -Filter $dateString*
@@ -195,6 +209,11 @@ foreach ($date in $datesToAnalyze) {
     $videoFiles = Get-ChildItem -Filter $dateString*.mp4   
     foreach ($file in $videoFiles) {
         Remove-Item $file
-    } 
+    }
+
+    Write-Information "Motion video files moved to directory $($newDir.Name)" -InformationAction Continue
 }
 
+Write-Host "Finished successfully" -ForegroundColor Green
+Set-Location $currentPath
+exit 0
