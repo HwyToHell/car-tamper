@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<playlist>
+	<title>Wiedergabeliste</title>
+	<trackList>
+		<track>
+			<location>file:///C:/Users/holge/Videos/backup/2021-05-04_17h00m00s.mp4</location>
+		</track>
+		<track>
+			<location>file:///C:/Users/holge/Videos/backup/2021-05-04_15h00m00s.mp4</location>
+		</track>
+		<track>
+			<location>file:///C:/Users/holge/Videos/backup/2021-05-04_16h00m00s.mp4</location>
+		</track>
+	</trackList>
+</playlist>
