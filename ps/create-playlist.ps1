@@ -41,11 +41,11 @@ function createPlaylist {
     $xmlPlayList.Close()
 }
 
-$videoPathInput = "C:\Users\holge\Videos"
-$dateStringInput = "2021-05-04"
+# $videoPathInput = "C:\Users\holge\Videos"
+# $dateStringInput = "2021-05-04"
 
-createPlaylist $videoPathInput $dateStringInput
+createPlaylist $videoPath $date
 
-# auf Carlas Rechner
+# auf Carlas Rechner in Skript Bewegungsanalyse
 # foreach ($date in $datesToAnalyze) {
 #   createPlaylist $localPath $date

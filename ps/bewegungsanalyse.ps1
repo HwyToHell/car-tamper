@@ -197,6 +197,7 @@ Write-Information "Analyzing motion" -InformationAction Continue
 tamper .
 Write-Information "Done" -InformationAction Continue
 
+
 # move motion files to date directory
 ###############################################################################
 foreach ($date in $datesToAnalyze) {
@@ -220,6 +221,55 @@ foreach ($date in $datesToAnalyze) {
 
     Write-Information "Motion video files moved to directory $($newDir.Name)" -InformationAction Continue
 }
+
+
+# create playlist
+###############################################################################
+function createPlaylist {
+    param([string]$videoPath, [datetime]$date)
+
+    $dateString = Get-Date -Date $date -Format yyyy-MM-dd
+
+    $videoDatePath = Join-Path $videoPath $dateString
+    $playListName = "_alle_Videos_abspielen_" + $dateString + ".xspf"
+    $playListPath = Join-Path $videoDatePath $playListName
+
+    $xmlPlayList = New-Object System.Xml.XmlTextWriter($playListPath, $null)
+    $xmlPlayList.Formatting = "Indented"
+    $xmlPlayList.IndentChar = " " 
+
+    $xmlPlayList.WriteStartDocument()
+
+    $xmlPlayList.WriteStartElement("playlist")
+
+    $xmlPlayList.WriteElementString("title", "Wiedergabeliste") 
+
+    $xmlPlayList.WriteStartElement("trackList")
+
+
+    $videoFiles = Get-ChildItem ($videoDatePath + "\*.avi")
+    $preFix = "file:///"
+
+    foreach ($file in $videoFiles.Name) {
+        $fileEntry = $preFix + ($videoDatePath -replace "\\","/") + "/" + $file
+        $xmlPlayList.WriteStartElement("track")
+        $xmlPlayList.WriteElementString("location", $fileEntry)
+        $xmlPlayList.WriteEndElement() #track
+    }
+
+    $xmlPlayList.WriteEndElement() #trackList
+
+    $xmlPlayList.WriteEndElement() #playlist
+
+    $xmlPlayList.WriteEndDocument()
+    $xmlPlayList.Flush()                                                               
+    $xmlPlayList.Close()
+}
+
+foreach ($date in $datesToAnalyze) {
+    createPlaylist $localPath $date
+}
+
 
 Write-Host "Finished successfully" -ForegroundColor Green
 Set-Location $currentPath
