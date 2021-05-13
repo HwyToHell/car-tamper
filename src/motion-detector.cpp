@@ -43,6 +43,26 @@ bool MotionDetector::hasFrameMotion(cv::Mat frame)
     int motionIntensity = cv::countNonZero(m_motionMask);
     bool isMotion = motionIntensity > m_minMotionIntensity ? true : false;
 
+    // DEBUG
+    /*
+    std::cout << "intensitiy: " << motionIntensity << "  " << isMotion << std::endl;
+    std::cout << "m_motionMask channels: " << m_motionMask.channels() << " size: " << m_motionMask.size << std::endl;
+    // color motionMask based on intensity
+    cv::Mat whiteBgr(m_roi.height, m_roi.width, CV_8UC3, cv::Scalar(255,255,255));
+    cv::Mat redBgr(m_roi.height, m_roi.width, CV_8UC3, cv::Scalar(0,0,255));
+    cv::Mat coloredMask(m_roi.height, m_roi.width, CV_8UC3, cv::Scalar(0,0,0));
+    if (isMotion) {
+        // motion mask in red
+        cv::bitwise_and(redBgr, redBgr, coloredMask, m_motionMask);
+    } else {
+        // motion mask in white
+        cv::bitwise_and(whiteBgr, whiteBgr, coloredMask, m_motionMask);
+    }
+    cv::imshow("motion mask", m_motionMask);
+    cv::imshow("colored mask", coloredMask);
+    */
+    // DEBUG_END
+
     // update motion duration
     // motion increase by 1
     if (isMotion) {
@@ -92,9 +112,10 @@ int MotionDetector::minMotionDuration() const
 
 void MotionDetector::minMotionIntensity(int value)
 {
-    /* per cent of frame area */
-    value = value > 100 ? 100 : value;
-    value = value < 0 ? 0 : value;
+    //* per cent of frame area */
+    //value = value > 100 ? 100 : value;
+    // value = value < 0 ? 0 : value;
+    /* number of pixels */
     m_minMotionIntensity = value;
 }
 

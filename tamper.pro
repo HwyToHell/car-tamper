@@ -72,7 +72,7 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
-    src/cli-analyzer.cpp \
+    src/main-analyze-hd.cpp \
     src/main-time-from-filename.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \

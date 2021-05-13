@@ -196,6 +196,18 @@ Error analyzeMotion(Params params, std::string fileName)
     detector.minMotionIntensity(params.detector.minMotionIntensity);
     detector.roi(params.detector.roi);
 
+    // DEBUG
+    /*
+    cv::namedWindow("motion mask", cv::WINDOW_NORMAL);
+    cv::resizeWindow("motion mask", 900, 300);
+    cv::moveWindow("colored mask", 0, 0);
+
+    cv::namedWindow("colored mask", cv::WINDOW_NORMAL);
+    cv::resizeWindow("colored mask", 900, 300);
+    cv::moveWindow("colored mask", 1000, 0);
+    */
+    // DEBUG_END
+
     int frameCount = 0;
     int progress = 0;
     cv::Mat frame;
@@ -205,6 +217,18 @@ Error analyzeMotion(Params params, std::string fileName)
         ++frameCount;
         buffer.pushToBuffer(frame);
         bool isMotion = detector.isContinuousMotion(frame);
+
+        // DEBUG
+        /*
+        if (cv::waitKey(10) == 32) 	{
+            std::cout << "SPACE pressed -> continue by hitting SPACE again, ESC to abort processing" << std::endl;
+            int key = cv::waitKey(0);
+            if (key == 27)
+                break;
+        }
+        */
+        // DEBUG_END
+
         if (isMotion) {
             if (!buffer.isSaveToDiskRunning()) {
                 buffer.setSaveToDisk(true);
@@ -212,6 +236,7 @@ Error analyzeMotion(Params params, std::string fileName)
         } else {
             buffer.setSaveToDisk(false);
         }
+
         // progress in per cent
         if (frameCount % 10 == 0) {
             progress = (frameCount * 100 / totalFrames);
@@ -295,7 +320,7 @@ bool waitForEnter()
 
 
 // TODO: progress bar
-int main_cli_analyzer(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
