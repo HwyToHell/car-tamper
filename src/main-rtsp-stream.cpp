@@ -320,7 +320,7 @@ bool waitForEnter()
 
 
 // TODO: progress bar
-int main_analyze_hd(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
@@ -342,48 +342,73 @@ int main_analyze_hd(int argc, char *argv[])
     cmdLine.process(a);
     const QStringList posArgs = cmdLine.positionalArguments();
 
-    std::vector<std::string> videoFiles;
-    // take video files from command line
-    if (posArgs.size() > 0) {
-        // take all video files of current directory
-        if (posArgs.at(0) == ".") {
-            QString curPath = QDir::currentPath();
-            videoFiles = getVideoFiles(curPath);
+    cv::VideoCapture cap("rtsp://admin:@192.168.1.10");
+    cv::Mat frame;
+    int frameCount = 0;
 
-        // take each argument as video input file
+    //cv::namedWindow("stream", cv::WINDOW_NORMAL);
+    //cv::resizeWindow("stream", 900, 300);
+    //cv::moveWindow("stream", 0, 0);
+
+    // analyze file
+    std::string outDirectory("motion");
+    MotionBuffer buffer(params.buffer.pre,
+                        25,
+                        outDirectory,
+                        "log",
+                        false,
+                        false);
+    buffer.postBuffer(params.buffer.post);
+    // buffer.startTime(startTime);
+
+    MotionDetector detector;
+    detector.bgrSubThreshold(params.detector.bgrSubThreshold);
+    detector.minMotionDuration(params.detector.minMotionDuration);
+    detector.minMotionIntensity(params.detector.minMotionIntensity);
+    detector.roi(cv::Rect(0,0,0,0));
+    while (true) {
+        // TODO time measurement
+        TimePoint start = std::chrono::system_clock::now();
+
+        cap.read(frame);
+        TimePoint read = std::chrono::system_clock::now();
+
+        buffer.pushToBuffer(frame);
+        TimePoint push = std::chrono::system_clock::now();
+
+        bool isMotion = detector.isContinuousMotion(frame);
+        if (isMotion) {
+            if (!buffer.isSaveToDiskRunning()) {
+                buffer.setSaveToDisk(true);
+            }
         } else {
-            videoFiles = getVideoFilesFromArgs(posArgs);
+            buffer.setSaveToDisk(false);
         }
 
-    // select directory and extract all video files
-    } else {
-        QStringList selectedFiles = QFileDialog::getOpenFileNames(nullptr,
-             "Select video files",
-             QDir::currentPath(),
-            "Video files (*.avi *.mp4)" );
-        for (auto file : selectedFiles) {
-            std::string f(file.toUtf8());
-            videoFiles.push_back(f);
+        TimePoint motion = std::chrono::system_clock::now();
+
+        ++frameCount;
+        //cv::imshow("stream", frame);
+
+        // std::cout << "frame size: " << frame.size << std::endl;
+        std::cout << "frame " << frameCount
+            << ": read " << std::chrono::duration_cast<std::chrono::milliseconds>(read - start).count()
+            << ", push " << std::chrono::duration_cast<std::chrono::milliseconds>(push - read).count()
+               << ", motion " << std::chrono::duration_cast<std::chrono::milliseconds>(motion - push).count()
+            << std::endl;
+
+
+        if (cv::waitKey(10) == 32) 	{
+            std::cout << "SPACE pressed -> continue by hitting SPACE again, ESC to abort processing" << std::endl;
+            int key = cv::waitKey(0);
+            if (key == 27)
+                break;
         }
+        if (frameCount >= 250)
+            break;
     }
+    //cv::destroyWindow("stream");
 
-    std::cout << videoFiles.size() << " video files selected for processing" << std::endl;
-    /* DEBUG
-    for (auto file: videoFiles)
-        std::cout << file << std::endl;
-    return 0;
-    */
-
-    for (auto file: videoFiles) {
-        if (cmdLine.isSet(roiOption)) {
-            showRoi(file, params.detector.roi);
-        }
-
-        Error error = analyzeMotion(params, file);
-        if (error != Error::OK) {
-            std::cout << errorMsg.find(error)->second << std::endl;
-        }
-    }
 
     //waitForEnter();
     return 0;
