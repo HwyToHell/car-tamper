@@ -92,9 +92,10 @@ int MotionDetector::minMotionDuration() const
 
 void MotionDetector::minMotionIntensity(int value)
 {
-    /* per cent of frame area */
-    value = value > 100 ? 100 : value;
-    value = value < 0 ? 0 : value;
+    //* per cent of frame area */
+    // value = value > 100 ? 100 : value;
+    // value = value < 0 ? 0 : value;
+    /* number of pixels */
     m_minMotionIntensity = value;
 }
 
