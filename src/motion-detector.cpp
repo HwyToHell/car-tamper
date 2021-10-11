@@ -76,10 +76,16 @@ bool MotionDetector::hasFrameMotion(cv::Mat frame)
         int height = m_processedFrame.size().height;
         cv::Mat whiteBgr(height, width, CV_8UC3, cv::Scalar(255,255,255));
         cv::Mat redBgr(height, width, CV_8UC3, cv::Scalar(0,0,255));
+        cv::Mat yellowBgr(height, width, CV_8UC3, cv::Scalar(0,255,255));
         cv::Mat coloredMask(height, width, CV_8UC3, cv::Scalar(0,0,0));
         if (isMotion) {
-            // motion mask in red
-            cv::bitwise_and(redBgr, redBgr, coloredMask, m_motionMask);
+            if (m_isContinuousMotion) {
+                // motion mask in red
+                cv::bitwise_and(redBgr, redBgr, coloredMask, m_motionMask);
+            } else {
+                // motion mask in yellow
+                cv::bitwise_and(yellowBgr, yellowBgr, coloredMask, m_motionMask);
+            }
         } else {
             // motion mask in white
             cv::bitwise_and(whiteBgr, whiteBgr, coloredMask, m_motionMask);
