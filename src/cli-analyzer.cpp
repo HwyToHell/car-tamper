@@ -70,12 +70,16 @@ struct ParamMotionDetector
     int         minMotionDuration;
     int         minMotionIntensity;
     cv::Rect    roi;
+    double      scaleFrame;
+    bool        debug;
+    char        avoidPaddingWarning1[7];
 };
 
 
 struct Params
 {
     Params();
+    Params(const Params&) = default;
     ~Params();
     ParamMotionBuffer   buffer;
     ParamMotionDetector detector;
@@ -110,10 +114,12 @@ void Params::loadSettings()
 
     settings.beginGroup("MotionDetector");
     detector.bgrSubThreshold = settings.value("bgrSubThreshold", 50).toDouble();
+    detector.debug = settings.value("debug", false).toBool();
     detector.minMotionDuration = settings.value("minMotionDuration", 10).toInt();
     detector.minMotionIntensity = settings.value("minMotionIntensity", 10).toInt();
     QRect qRoi = settings.value("roi", QRect(0,0,0,0)).toRect();
     detector.roi = cv::Rect(qRoi.x(), qRoi.y(), qRoi.width(),qRoi.height());
+    detector.scaleFrame = settings.value("scaleFrame", 0.25).toDouble();
     settings.endGroup();
 }
 
@@ -130,10 +136,12 @@ void Params::saveSettings()
 
     settings.beginGroup("MotionDetector");
     settings.setValue("bgrSubThreshold", detector.bgrSubThreshold);
+    settings.setValue("debug", detector.debug);
     settings.setValue("minMotionDuration", detector.minMotionDuration);
     settings.setValue("minMotionIntensity", detector.minMotionIntensity);
     QRect qRoi(detector.roi.x, detector.roi.y, detector.roi.width, detector.roi.height);
     settings.setValue("roi", qRoi);
+    settings.setValue("scaleFrame", detector.scaleFrame);
     settings.endGroup();
 }
 
@@ -201,6 +209,25 @@ Error analyzeMotion(Params params, std::string fileName)
     cv::Mat frame;
     rlutil::saveDefaultColor();
     rlutil::CursorHider hide;
+
+    // DEBUG
+    cv::VideoWriter debugVideo;
+    if (params.detector.debug) {
+        std::cout << "debug mode on" << std::endl;
+        detector.debugMode(true);
+        std::string debugFileName = videoPath.filename().string() + "_debug" + ".avi";
+        int fourcc = cv::VideoWriter::fourcc('X','V','I','D');
+        int scaledWidth = static_cast<int>(params.detector.scaleFrame * cap.get(cv::CAP_PROP_FRAME_WIDTH));
+        int scaledHeight = static_cast<int>(params.detector.scaleFrame * cap.get(cv::CAP_PROP_FRAME_HEIGHT));
+        cv::Size frameSize(scaledWidth, scaledHeight);
+        if(!debugVideo.open(debugFileName, fourcc, fps, frameSize)) {
+            std::cout << "cannot create debug file: " << debugFileName << std::endl;
+        } else {
+            std::cout << "create debug file: " << debugFileName << std::endl;
+        }
+    }
+    // DEBUG_END
+
     while (cap.read(frame)) {
         ++frameCount;
         buffer.pushToBuffer(frame);
@@ -212,16 +239,26 @@ Error analyzeMotion(Params params, std::string fileName)
         } else {
             buffer.setSaveToDisk(false);
         }
+
+        if (params.detector.debug) {
+            debugVideo.write(detector.debugMotionMask());
+        }
+        // DEBUG necessary for imshow
+        // if (cv::waitKey(10) == 27) break;
+
         // progress in per cent
         if (frameCount % 10 == 0) {
             progress = (frameCount * 100 / totalFrames);
             printProgress(fileName, progress);
         }
     }
+
+    debugVideo.release();
     // allow 1 second to release video writer, otherwise ffmpeg encoding errors are likely to occur
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     buffer.releaseBuffer();
     cap.release();
+
 
     if (frameCount == totalFrames) {
         std::cout << fileName << "  ";
@@ -294,8 +331,7 @@ bool waitForEnter()
 }
 
 
-// TODO: progress bar
-int main_cli_analyzer(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");

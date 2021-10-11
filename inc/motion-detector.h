@@ -20,6 +20,9 @@ public:
     /* background subtractor: theshold of frame difference */
     void        bgrSubThreshold(double threshold);
     double      bgrSubThreshold() const;
+    void        debugMode(bool debug);
+    bool        debugMode() const;
+    cv::Mat     debugMotionMask() const;
     bool        hasFrameMotion(cv::Mat frame);
     bool        isContinuousMotion(cv::Mat frame);
     /* duration as number of update steps */
@@ -38,11 +41,16 @@ public:
     // TODO reset backgroundsubtractor
 private:
     cv::Ptr<BackgroundSubtractorLowPass> m_bgrSub;
+    bool        m_debug;
+    cv::Mat     m_debugMotionMask;
     bool        m_isContinuousMotion;
     int         m_minMotionDuration;
     int         m_minMotionIntensity;
     int         m_motionDuration;
+    int         m_motionIntensity;
     cv::Mat     m_motionMask;
+    cv::Mat     m_resizedFrame;
+    cv::Mat     m_processedFrame;
     cv::Rect    m_roi;
 };
 

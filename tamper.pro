@@ -29,6 +29,10 @@ LIBS += -lopencv_core \
         -lopencv_videoio
 LIBS += -lv4l2 -lv4l1
 LIBS += -lstdc++fs
+    contains(QT_ARCH, "arm") {
+        message("ARM cross")
+        INCLUDEPATH += /home/holger/app-dev/pi4-qt/sysroot/usr/local/include
+    }
 }
 
 windows {
@@ -72,7 +76,7 @@ HEADERS += \
 
 SOURCES += \
     src/backgroundsubtraction.cpp \
-    src/main-rtsp-stream.cpp \
+    src/cli-analyzer.cpp \
     src/motion-detector.cpp \
     src/motionbuffer.cpp \
     src/time-stamp.cpp \
@@ -80,5 +84,5 @@ SOURCES += \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
+else: unix:!android: target.path = /home/pi
 !isEmpty(target.path): INSTALLS += target

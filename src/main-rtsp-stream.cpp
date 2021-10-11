@@ -309,6 +309,30 @@ bool showRoi(std::string videoFile, cv::Rect roi)
 }
 
 
+void statistics(std::vector<long long> samples, std::string name)
+{
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wall"
+    // std::vector<long long>::iterator itMax = std::max_element(samples.begin(), samples.end());
+    long long max = *(std::max_element(samples.begin(), samples.end()));
+    // long long max = *itMax;
+    #pragma GCC diagnostic pop
+
+    long long sum = std::accumulate(samples.begin(), samples.end(), 0);
+    double mean = static_cast<double>(sum) / samples.size();
+
+    double variance = 0, stdDeviation = 0;
+    for (auto sample : samples) {
+        variance += pow ((sample - mean), 2);
+    }
+    stdDeviation = sqrt(variance / samples.size());
+
+    std::cout << std::endl << "===================================" << std::endl << name << std::endl;
+    std::cout << "mean: " << mean << " max: " << max << std::endl;
+    std::cout << "95%:  " << mean + (2 * stdDeviation) << std::endl;
+}
+
+
 bool waitForEnter()
 {
     using namespace std;
@@ -320,7 +344,7 @@ bool waitForEnter()
 
 
 // TODO: progress bar
-int main(int argc, char *argv[])
+int main_rtsp_stream(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     QApplication::setOrganizationName("grzonka");
@@ -342,7 +366,8 @@ int main(int argc, char *argv[])
     cmdLine.process(a);
     const QStringList posArgs = cmdLine.positionalArguments();
 
-    cv::VideoCapture cap("rtsp://admin:@192.168.1.10");
+    //cv::VideoCapture cap("rtsp://admin:@192.168.1.10");
+    cv::VideoCapture capFile("2021-05-10_14h09m00s.mp4");
     cv::Mat frame;
     int frameCount = 0;
 
@@ -366,11 +391,18 @@ int main(int argc, char *argv[])
     detector.minMotionDuration(params.detector.minMotionDuration);
     detector.minMotionIntensity(params.detector.minMotionIntensity);
     detector.roi(cv::Rect(0,0,0,0));
+
+    // measurement
+    std::vector<long long> readTimes;
+    std::vector<long long> pushTimes;
+    std::vector<long long> motionTimes;
+
+    capFile.read(frame);
     while (true) {
         // TODO time measurement
         TimePoint start = std::chrono::system_clock::now();
 
-        cap.read(frame);
+        capFile.read(frame);
         TimePoint read = std::chrono::system_clock::now();
 
         buffer.pushToBuffer(frame);
@@ -391,10 +423,19 @@ int main(int argc, char *argv[])
         //cv::imshow("stream", frame);
 
         // std::cout << "frame size: " << frame.size << std::endl;
+        long long readDuration = std::chrono::duration_cast<std::chrono::milliseconds>(read - start).count();
+        readTimes.push_back(readDuration);
+
+        long long pushDuration = std::chrono::duration_cast<std::chrono::milliseconds>(push - read).count();
+        pushTimes.push_back(pushDuration);
+
+        long long motionDuration = std::chrono::duration_cast<std::chrono::milliseconds>(motion - push).count();
+        motionTimes.push_back(motionDuration);
+
         std::cout << "frame " << frameCount
-            << ": read " << std::chrono::duration_cast<std::chrono::milliseconds>(read - start).count()
-            << ", push " << std::chrono::duration_cast<std::chrono::milliseconds>(push - read).count()
-               << ", motion " << std::chrono::duration_cast<std::chrono::milliseconds>(motion - push).count()
+            << ": read " << readDuration
+            << ", push " << pushDuration
+               << ", motion " << motionDuration
             << std::endl;
 
 
@@ -408,6 +449,9 @@ int main(int argc, char *argv[])
             break;
     }
     //cv::destroyWindow("stream");
+    statistics(readTimes, "read in ms");
+    statistics(pushTimes, "push in ms");
+    statistics(motionTimes, "motion in ms");
 
 
     //waitForEnter();
