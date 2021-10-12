@@ -75,8 +75,9 @@ bool MotionDetector::hasFrameMotion(cv::Mat frame)
         int width = m_processedFrame.size().width;
         int height = m_processedFrame.size().height;
         cv::Mat whiteBgr(height, width, CV_8UC3, cv::Scalar(255,255,255));
-        cv::Mat redBgr(height, width, CV_8UC3, cv::Scalar(0,0,255));
         cv::Mat yellowBgr(height, width, CV_8UC3, cv::Scalar(0,255,255));
+        cv::Mat orangeBgr(height, width, CV_8UC3, cv::Scalar(0,127,255));
+        cv::Mat redBgr(height, width, CV_8UC3, cv::Scalar(0,0,255));
         cv::Mat coloredMask(height, width, CV_8UC3, cv::Scalar(0,0,0));
         if (isMotion) {
             if (m_isContinuousMotion) {
@@ -87,8 +88,13 @@ bool MotionDetector::hasFrameMotion(cv::Mat frame)
                 cv::bitwise_and(yellowBgr, yellowBgr, coloredMask, m_motionMask);
             }
         } else {
-            // motion mask in white
-            cv::bitwise_and(whiteBgr, whiteBgr, coloredMask, m_motionMask);
+            if (m_isContinuousMotion) {
+                // motion mask in orange
+                cv::bitwise_and(orangeBgr, yellowBgr, coloredMask, m_motionMask);
+            } else {
+                // motion mask in white
+                cv::bitwise_and(whiteBgr, whiteBgr, coloredMask, m_motionMask);
+            }
         }
         m_debugMotionMask = coloredMask;
         // cv::imshow("resized frame", m_resizedFrame);
